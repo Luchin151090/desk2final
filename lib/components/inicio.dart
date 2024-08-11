@@ -1,6 +1,6 @@
 import 'package:desktop2/components/login.dart';
 import 'package:desktop2/components/ruteo.dart';
-import 'package:desktop2/components/tiendaPato.dart';
+import 'package:desktop2/components/tienda.dart';
 import 'package:flutter/material.dart';
 
 class MyApp extends StatelessWidget {

@@ -1,6 +1,4 @@
 import 'dart:io';
-
-import 'package:desktop2/components/distritos/distritos.dart';
 import 'package:desktop2/components/provider/marcador.dart';
 import 'package:desktop2/components/ruteowidgets/agendados.dart';
 import 'package:desktop2/components/ruteowidgets/rutas.dart';
@@ -292,7 +290,7 @@ class _RuteoState extends State<Ruteo> {
   Future<dynamic> getConductores() async {
     try {
       SharedPreferences empleadoShare = await SharedPreferences.getInstance();
-      var empleadoIDs = 1; //empleadoShare.getInt('empleadoID');
+      var empleadoIDs = empleadoShare.getInt('empleadoID');
       print("El empleado traido es");
       print(empleadoIDs);
       var res = await http.get(
@@ -358,7 +356,7 @@ class _RuteoState extends State<Ruteo> {
       var res = await http.get(
           Uri.parse(api +
               apiVehiculos +
-              '1'), //empleadoShare.getInt('empleadoID').toString()),
+              empleadoShare.getInt('empleadoID').toString()), //empleadoShare.getInt('empleadoID').toString()),
           headers: {"Content-type": "application/json"});
       //print("........................................RES BODY");
       //print(res.body);
@@ -391,7 +389,7 @@ class _RuteoState extends State<Ruteo> {
       print(apipedidos);
       SharedPreferences empleadoShare = await SharedPreferences.getInstance();
 
-      var empleadoIDs = 1; //empleadoShare.getInt('empleadoID');
+      var empleadoIDs = empleadoShare.getInt('empleadoID');
       var res = await http.get(
           Uri.parse(api + apipedidos + '/' + empleadoIDs.toString()),
           headers: {"Content-type": "application/json"});
