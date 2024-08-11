@@ -149,7 +149,6 @@ class _RuteoState extends State<Ruteo> {
   String api = dotenv.env['API_URL'] ?? '';
   String apipedidos = '/api/pedido';
   String conductores = '/api/user_conductor';
-  String rutacrear = '/api/ruta';
   String apiRutaCrear = '/api/ruta';
   String apiLastRuta = '/api/rutalast';
   String apiUpdateRuta = '/api/pedidoruta';
@@ -1400,7 +1399,7 @@ class _RuteoState extends State<Ruteo> {
                                                                       .all(10),
                                                               color:
                                                                   Colors.blue,
-                                                              child:
+                                                              child:distrito_de_pedido.length >0 ?
                                                                   GestureDetector(
                                                                 behavior:
                                                                     HitTestBehavior
@@ -1502,7 +1501,11 @@ class _RuteoState extends State<Ruteo> {
                                                                     ),
                                                                   ),
                                                                 ),
-                                                              ),
+                                                              ): const Center(child: Text("No hay pedidos agendados",
+                                                              textAlign: TextAlign.center,                                                              
+                                                              style: TextStyle(
+                                                                fontWeight: FontWeight.bold
+                                                              ),),),
                                                             ),
                                                             const SizedBox(
                                                               width: 20,

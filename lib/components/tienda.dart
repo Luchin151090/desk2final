@@ -348,7 +348,7 @@ class _TiendaState extends State<Tienda> {
   }
 
   Future<void> crearClienteNRmPedidoyDetallePedido(empleadoID, tipo) async {
-    DateTime tiempoGMTPeru = tiempoActual.subtract(const Duration(hours: 5));
+    DateTime tiempoGMTPeru = tiempoActual.subtract(const Duration(hours: 0));
 
     //print('-------------------------------------------------');
     //print('FUNCION QUE ORDENA LOS ENDPOINTS');

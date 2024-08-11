@@ -1508,9 +1508,10 @@ Future<List<VehiculoStock>> getVehiculoStock(int vehiculoId) async {
                                                         color: const Color
                                                             .fromARGB(
                                                             255, 109, 105, 129),
-                                                        child: Column(
+                                                        child:distrito_de_pedido
+                                                                        .length >0 ? Column(
                                                           children: [
-                                                            Text(
+                                                            const Text(
                                                               "Adición de pedidos (opcional)",
                                                               style: TextStyle(
                                                                   fontWeight:
@@ -1627,7 +1628,11 @@ Future<List<VehiculoStock>> getVehiculoStock(int vehiculoId) async {
                                                               ),
                                                             ),
                                                           ],
-                                                        ),
+                                                        ):const Center(child: Text("No hay pedidos agendados",
+                                                        textAlign: TextAlign.center,
+                                                        style: TextStyle(
+                                                          fontWeight: FontWeight.bold
+                                                        ),),),
                                                       ),
 
                                                       // Columna 3: Pedidos con ícono de borrar

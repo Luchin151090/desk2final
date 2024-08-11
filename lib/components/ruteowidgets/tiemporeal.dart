@@ -371,7 +371,7 @@ class _TiemporealState extends State<Tiemporeal> {
                   if (fechaparseadas.year == now.year &&
                       fechaparseadas.month == now.month &&
                       fechaparseadas.day == now.day) {
-                    if (fechaparseadas.hour < 16) {
+                    if (fechaparseadas.hour < 23) {
                       latitudtemp =
                           (pedidosget[i].latitud ?? 0.0) + (0.000001 * count);
                       longitudtemp =
@@ -486,7 +486,7 @@ class _TiemporealState extends State<Tiemporeal> {
               print(fechaparseada.hour);*/
 
               /// SERA NECESARIO APLICAR LA LOGICA EN ESTA VISTA????????????????????????????
-              if (fechaparseada.hour < 16) {
+              if (fechaparseada.hour < 23) {
                 //print('es antes de la 1 EN socket');
                 hoypedidos.add(nuevoPedido);
 
