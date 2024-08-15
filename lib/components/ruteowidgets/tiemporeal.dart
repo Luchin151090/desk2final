@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
@@ -335,7 +336,9 @@ class _TiemporealState extends State<Tiemporeal> {
 
   Future<dynamic> getPedidos() async {
     try {
-      var empleadoIDs = 1; // o empleadoShare.getInt('empleadoID');
+      SharedPreferences empleadoShare = await SharedPreferences.getInstance();
+      var empleadoIDs = empleadoShare.getInt('empleadoID');
+      
       var res = await http.get(
           Uri.parse(api + apipedidos + '/' + empleadoIDs.toString()),
           headers: {"Content-type": "application/json"});

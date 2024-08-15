@@ -108,7 +108,9 @@ class _TiendaState extends State<Tienda> {
   final TextEditingController _latitud = TextEditingController();
   final TextEditingController _longitud = TextEditingController();
   final TextEditingController _ruc = TextEditingController();
+  final TextEditingController _fechanacimiento = TextEditingController();
 
+  String? _estadoPedido = 'pendiente';
   late double temperatura = 0.0;
   final now = DateTime.now();
   // Formato para obtener el nombre del mes
@@ -348,7 +350,7 @@ class _TiendaState extends State<Tienda> {
   }
 
   Future<void> crearClienteNRmPedidoyDetallePedido(empleadoID, tipo) async {
-    DateTime tiempoGMTPeru = tiempoActual.subtract(const Duration(hours: 0));
+    //DateTime tiempoGMTPeru = tiempoActual.subtract(const Duration(hours: 0));
 
     //print('-------------------------------------------------');
     //print('FUNCION QUE ORDENA LOS ENDPOINTS');
@@ -386,11 +388,13 @@ class _TiendaState extends State<Tienda> {
       // print('8.2) Este es el tiempo de peru: ${tiempoGMTPeru.toString()}');
       await datosCreadoPedido(
           lastClienteNR,
-          tiempoGMTPeru.toString(),
+          _fechanacimiento,
+          //tiempoGMTPeru.toString(),
           montoTotalPedido,
           descuentoTotalPedido,
           tipo,
-          "pendiente",
+          //"pendiente",
+          _estadoPedido,
           observacionFinal,
           lastUbic); //id_ubicacion=172
 
@@ -491,14 +495,28 @@ class _TiendaState extends State<Tienda> {
       clienteNrId, productoId, cantidadInt, promoID) async {
     //print('---------------------------------');
     //print('10.3) DATOS CREADO DE DETALLE PEDIDO');
-    await http.post(Uri.parse(apiUrl + apiDetallePedido),
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl + apiDetallePedido),
         headers: {"Content-type": "application/json"},
         body: jsonEncode({
           "cliente_nr_id": clienteNrId,
           "producto_id": productoId,
           "cantidad": cantidadInt,
           "promocion_id": promoID
-        }));
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        print('Error en detallePedido: ${response.statusCode}');
+        print('Respuesta del servidor: ${response.body}');
+        throw Exception(
+            'Error al crear detalle de pedido: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Excepción en detallePedido: $e');
+      throw Exception('Error al crear detalle de pedido: $e');
+    }
   }
 
   //FUNCION QUE OBTIENE EL LAST CLIENTE REGISTRADO
@@ -587,24 +605,50 @@ class _TiendaState extends State<Tienda> {
   //CREA EL PEDIDO
   Future<dynamic> datosCreadoPedido(clienteNrId, fecha, montoTotal, descuento,
       tipo, estado, observacionProd, ubicacion_id) async {
-    //print('---------------------------------');
-    //print('9) DATOS CREADO PEDIDO');
-    if (tipo == 'express') {
-      montoTotal += 4;
-    }
-    await http.post(Uri.parse(apiUrl + apiPedidos),
+    try {
+      if (tipo == 'express') {
+        montoTotal += 4;
+      }
+
+      // Obtener el texto de la fecha
+      String fechaText;
+      if (fecha is TextEditingController) {
+        fechaText = fecha.text;
+      } else if (fecha is String) {
+        fechaText = fecha;
+      } else {
+        throw ArgumentError('El tipo de fecha no es válido');
+      }
+
+      // Parsear y formatear la fecha
+      final DateTime parsedDate = DateFormat("d/M/yyyy").parse(fechaText);
+      final String formattedDate = DateFormat("yyyy-MM-dd").format(parsedDate);
+
+      final response = await http.post(
+        Uri.parse(apiUrl + apiPedidos),
         headers: {"Content-type": "application/json"},
         body: jsonEncode({
           "cliente_nr_id": clienteNrId,
           "subtotal": montoTotal.toDouble(),
           "descuento": descuento,
           "total": montoTotal.toDouble(),
-          "fecha": fecha,
+          "fecha": formattedDate,
           "tipo": tipo,
           "estado": estado,
           "observacion": observacionProd,
           "ubicacion_id": ubicacion_id
-        }));
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        print('Error en datosCreadoPedido: ${response.statusCode}');
+        print('Respuesta del servidor: ${response.body}');
+        throw Exception('Error al crear pedido: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Excepción en datosCreadoPedido: $e');
+      throw Exception('Error al crear pedido: $e');
+    }
   }
 
   @override
@@ -936,7 +980,76 @@ class _TiendaState extends State<Tienda> {
                                           )),
                                     ),
                                     const SizedBox(
-                                      height: 50,
+                                      height: 30,
+                                    ),
+                                    TextFormField(
+                                      readOnly: true,
+                                      controller:
+                                          _fechanacimiento, // Usa el controlador de texto
+                                      onTap: () async {
+                                        // Abre el selector de fechas cuando se hace clic en el campo
+                                        DateTime? fechaSeleccionada =
+                                            await showDatePicker(
+                                          context: context,
+                                          initialDate: DateTime.now(),
+                                          firstDate: DateTime(1970),
+                                          lastDate: DateTime(2101),
+                                        );
+
+                                        if (fechaSeleccionada != null) {
+                                          // Actualiza el valor del campo de texto con la fecha seleccionada
+                                          _fechanacimiento.text =
+                                              "${fechaSeleccionada.day}/${fechaSeleccionada.month}/${fechaSeleccionada.year}";
+                                        }
+                                      },
+                                      keyboardType: TextInputType.datetime,
+                                      style: const TextStyle(
+                                        //fontSize: largoActual * 0.024,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Fecha de Pedido',
+                                        // hintText: 'Ingrese sus apellidos',
+                                        isDense: true,
+                                        labelStyle: TextStyle(
+                                          // fontSize: largoActual * 0.02,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color.fromARGB(255, 1, 55, 99),
+                                        ),
+                                        hintStyle: TextStyle(
+                                          //  fontSize: largoActual * 0.018,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      height: 30,
+                                    ),
+                                    DropdownButtonFormField<String>(
+                                      value: _estadoPedido,
+                                      onChanged: (String? newValue) {
+                                        setState(() {
+                                          _estadoPedido = newValue!;
+                                        });
+                                      },
+                                      decoration: const InputDecoration(
+                                        labelText: 'Estado del Pedido',
+                                        isDense: true,
+                                        labelStyle: TextStyle(
+                                          fontSize: 15.0,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color.fromARGB(255, 1, 55, 99),
+                                        ),
+                                      ),
+                                      items: <String>['pendiente', 'pagado']
+                                          .map<DropdownMenuItem<String>>(
+                                              (String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value),
+                                        );
+                                      }).toList(),
                                     ),
                                   ],
                                 )),
@@ -1930,7 +2043,6 @@ class _TiendaState extends State<Tienda> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                           
                             Container(
                                 child: ElevatedButton(
                               onPressed: () async {
@@ -2010,7 +2122,7 @@ class _TiendaState extends State<Tienda> {
                             const SizedBox(
                               height: 20,
                             ),
-                             Container(
+                            Container(
                               ///margin: const EdgeInsets.only(bottom: 20),
                               child: const Text(
                                 "Ubicación",

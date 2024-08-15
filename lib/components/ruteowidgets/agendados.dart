@@ -99,7 +99,7 @@ class _AgendadosState extends State<Agendados> {
       //print(apipedidos);
       SharedPreferences empleadoShare = await SharedPreferences.getInstance();
 
-      var empleadoIDs = 1; //empleadoShare.getInt('empleadoID');
+      var empleadoIDs = empleadoShare.getInt('empleadoID');
       var res = await http.get(
           Uri.parse(api + apipedidos + '/' + empleadoIDs.toString()),
           headers: {"Content-type": "application/json"});

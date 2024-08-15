@@ -432,7 +432,7 @@ Future<List<VehiculoStock>> getVehiculoStock(int vehiculoId) async {
       //print(apipedidos);
       SharedPreferences empleadoShare = await SharedPreferences.getInstance();
 
-      var empleadoIDs = 1; //empleadoShare.getInt('empleadoID');
+      var empleadoIDs = empleadoShare.getInt('empleadoID');
       var res = await http.get(
           Uri.parse(api + apipedidos + '/' + empleadoIDs.toString()),
           headers: {"Content-type": "application/json"});
@@ -648,7 +648,7 @@ Future<List<VehiculoStock>> getVehiculoStock(int vehiculoId) async {
   Future<dynamic> getConductores() async {
     try {
       SharedPreferences empleadoShare = await SharedPreferences.getInstance();
-      var empleadoIDs = 1; //empleadoShare.getInt('empleadoID');
+      var empleadoIDs = empleadoShare.getInt('empleadoID');
       /*print("El empleado traido es");
       print(empleadoIDs);*/
       var res = await http.get(
@@ -685,7 +685,7 @@ Future<List<VehiculoStock>> getVehiculoStock(int vehiculoId) async {
       var res = await http.get(
           Uri.parse(api +
               apiVehiculos +
-              '1'), //empleadoShare.getInt('empleadoID').toString()),
+              empleadoShare.getInt('empleadoID').toString()),
           headers: {"Content-type": "application/json"});
       //print("........................................RES BODY");
       //print(res.body);
