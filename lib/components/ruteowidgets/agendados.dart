@@ -102,7 +102,7 @@ class _AgendadosState extends State<Agendados> {
       //print(apipedidos);
       SharedPreferences empleadoShare = await SharedPreferences.getInstance();
 
-      var empleadoIDs = 1; //empleadoShare.getInt('empleadoID');
+      var empleadoIDs =empleadoShare.getInt('empleadoID');
       var res = await http.get(
           Uri.parse(api + apipedidos + '/' + empleadoIDs.toString()),
           headers: {"Content-type": "application/json"});
@@ -137,6 +137,7 @@ class _AgendadosState extends State<Agendados> {
           for (var j = 0; j < pedidosget.length; j++) {
             fechaparseadas = DateTime.parse(pedidosget[j].fecha.toString());
             if (pedidosget[j].estado == 'pendiente' ||
+            pedidosget[j].estado == 'pagado' ||
                 pedidosget[j].estado == 'en proceso') {
               /// AQUI TAMBIEN SE PONE LOS PEDIDOS EN PROCESO QUE NO FUERON ATENDIDOS POR TIEMPO
               if (pedidosget[j].tipo == 'normal' ||
@@ -161,6 +162,7 @@ class _AgendadosState extends State<Agendados> {
             for (var j = 0; j < pedidosget.length; j++) {
               fechaparseadas = DateTime.parse(pedidosget[j].fecha.toString());
               if (pedidosget[j].estado == 'pendiente' ||
+              pedidosget[j].estado == 'pagado' ||
                   pedidosget[j].estado == 'en proceso') {
                 if (pedidosget[j].tipo == 'normal' ||
                     pedidosget[j].tipo == 'express') {
@@ -199,6 +201,7 @@ class _AgendadosState extends State<Agendados> {
           for (var i = 0; i < pedidosget.length; i++) {
             fechaparseadas = DateTime.parse(pedidosget[i].fecha.toString());
             if (pedidosget[i].estado == 'pendiente' ||
+            pedidosget[i].estado == 'pagado' ||
                 pedidosget[i].estado == 'en proceso') {
               if (pedidosget[i].tipo == 'normal' ||
                   pedidosget[i].tipo == 'express') {
@@ -385,11 +388,12 @@ class _AgendadosState extends State<Agendados> {
               ),
             ),
             Container(
-              padding: EdgeInsets.all(8),
+              padding: EdgeInsets.all(0),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
+               // color:Colors.red
               ),
-              width: MediaQuery.of(context).size.width / 8,
+              width: MediaQuery.of(context).size.width / 6.3,
               height: MediaQuery.of(context).size.height / 1.15,
               child: number > 0
                   ? ListView.builder(
@@ -399,8 +403,8 @@ class _AgendadosState extends State<Agendados> {
                         return Row(
                           children: [
                             Container(
-                              height: MediaQuery.of(context).size.height / 3.5,
-                              width: MediaQuery.of(context).size.width / 12,
+                              height: MediaQuery.of(context).size.height / 3,
+                              width: MediaQuery.of(context).size.width / 9,
                               child: Container(
                                 padding: EdgeInsets.all(9),
                                 height: 200,
@@ -417,7 +421,8 @@ class _AgendadosState extends State<Agendados> {
                                     Center(
                                       child: Text(
                                         'Pedido N: ${agendados[index].id} ',
-                                        style: const TextStyle(
+                                        style:  TextStyle(
+                                          fontSize: MediaQuery.of(context).size.height/60,
                                           fontWeight: FontWeight.bold,
                                           color: Colors.white,
                                         ),
@@ -425,13 +430,15 @@ class _AgendadosState extends State<Agendados> {
                                     ),
                                     Text(
                                       "Estado: ${agendados[index].estado}",
-                                      style: const TextStyle(
+                                      style: TextStyle(
+                                        fontSize: MediaQuery.of(context).size.height/60,
                                         color: Color.fromARGB(255, 227, 248, 0),
                                       ),
                                     ),
                                     Text(
                                       "Fecha: ${agendados[index].fecha}",
-                                      style: const TextStyle(
+                                      style: TextStyle(
+                                       fontSize: MediaQuery.of(context).size.height/70, 
                                         color:
                                             Color.fromARGB(255, 202, 202, 202),
                                         fontWeight: FontWeight.bold,
@@ -474,172 +481,174 @@ class _AgendadosState extends State<Agendados> {
                               ),
                             ),
                             Container(
-                              width: MediaQuery.of(context).size.width / 51,
-                              height: 40,
-                              margin: EdgeInsets.only(left: 10),
+                              width: MediaQuery.of(context).size.width / 45,
+                              height: MediaQuery.of(context).size.width / 45,
+                              margin: const EdgeInsets.only(left: 10),
                               decoration: BoxDecoration(
-                                color: Color.fromARGB(255, 8, 16, 90),
+                                color: const Color.fromARGB(255, 8, 16, 90),
                                 borderRadius: BorderRadius.circular(50),
                               ),
-                              child: IconButton(
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      double totalPago = 0.0;
-                                      String fechaPed = '';
-                                      String estadoPed = 'pagado';
-                                      String observacion = '';
-                                      return Dialog(
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          height: MediaQuery.of(context)
-                                                  .size
-                                                  .height /
-                                              2.7, //5.5
-                                          width: MediaQuery.of(context)
-                                                  .size
-                                                  .width /
-                                              5, //6
-                                          padding: const EdgeInsets.all(11),
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              const Center(
-                                                child: Text(
-                                                  "Editar Pedido",
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 30,
-                                                  ),
-                                                ),
-                                              ),
-                                              TextField(
-                                                decoration: InputDecoration(
-                                                    labelText: 'Pago Total'),
-                                                keyboardType:
-                                                    TextInputType.number,
-                                                onChanged: (value) {
-                                                  totalPago =
-                                                      double.tryParse(value) ??
-                                                          0.0;
-                                                },
-                                              ),
-                                              TextField(
-                                                controller:
-                                                    _fechaController, // Asigna el controlador al TextField
-                                                decoration: InputDecoration(
-                                                  labelText: 'Fecha',
-                                                ),
-                                                readOnly:
-                                                    true, // Esto previene la edición manual del campo de texto
-                                                onTap: () async {
-                                                  DateTime? pickedDate =
-                                                      await showDatePicker(
-                                                    context: context,
-                                                    initialDate: DateTime.now(),
-                                                    firstDate: DateTime(2000),
-                                                    lastDate: DateTime(2101),
-                                                  );
-                                                  if (pickedDate != null) {
-                                                    String formattedDate =
-                                                        "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
-                                                    _fechaController.text =
-                                                        formattedDate; // Actualiza el controlador con la fecha formateada
-                                                    fechaPed = pickedDate
-                                                        .toIso8601String(); // Puedes usar esta fecha para almacenar
-                                                  }
-                                                },
-                                              ),
-                                              DropdownButton<String>(
-                                                value: estadoPed,
-                                                items: <String>[
-                                                  'pagado',
-                                                  'anulado',
-                                                  'pendiente'
-                                                ].map<DropdownMenuItem<String>>(
-                                                    (String value) {
-                                                  return DropdownMenuItem<
-                                                      String>(
-                                                    value: value,
-                                                    child: Text(value),
-                                                  );
-                                                }).toList(),
-                                                onChanged: (String? newValue) {
-                                                  if (newValue != null) {
-                                                    estadoPed = newValue;
-                                                  }
-                                                },
-                                              ),
-                                              TextField(
-                                                decoration: InputDecoration(
-                                                    labelText: 'Observación'),
-                                                onChanged: (value) {
-                                                  observacion = value;
-                                                },
-                                              ),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment
-                                                    .spaceBetween, // Alinea los botones con espacio entre ellos
-                                                children: [
-                                                  ElevatedButton(
-                                                    onPressed: () {
-                                                      Navigator.pop(
-                                                          context); // Acción para el botón "Cancelar"
-                                                    },
-                                                    child: const Text(
-                                                      "Cancelar",
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      backgroundColor: Colors
-                                                          .red, // Puedes cambiar el color del botón "Cancelar" si lo deseas
+                              child: Center(
+                                child: IconButton(
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        double totalPago = 0.0;
+                                        String fechaPed = 'NA';
+                                        String estadoPed = 'pagado';
+                                        String observacion = 'NA';
+                                        return Dialog(
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height /
+                                                2.7, //5.5
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width /
+                                                5, //6
+                                            padding: const EdgeInsets.all(11),
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceBetween,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
+                                              children: [
+                                                const Center(
+                                                  child: Text(
+                                                    "Editar Pedido",
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 30,
                                                     ),
                                                   ),
-                                                  ElevatedButton(
+                                                ),
+                                                TextField(
+                                                  decoration: const InputDecoration(
+                                                      labelText: 'Pago Total'),
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  onChanged: (value) {
+                                                    totalPago =
+                                                        double.tryParse(value) ??
+                                                            0.0;
+                                                  },
+                                                ),
+                                                TextField(
+                                                  controller:
+                                                      _fechaController, // Asigna el controlador al TextField
+                                                  decoration:const InputDecoration(
+                                                    labelText: 'Fecha',
+                                                  ),
+                                                  readOnly:
+                                                      true, // Esto previene la edición manual del campo de texto
+                                                  onTap: () async {
+                                                    DateTime? pickedDate =
+                                                        await showDatePicker(
+                                                      context: context,
+                                                      initialDate: DateTime.now(),
+                                                      firstDate: DateTime(2000),
+                                                      lastDate: DateTime(2101),
+                                                    );
+                                                    if (pickedDate != null) {
+                                                      String formattedDate =
+                                                          "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
+                                                      _fechaController.text =
+                                                          formattedDate; // Actualiza el controlador con la fecha formateada
+                                                      fechaPed = pickedDate
+                                                          .toIso8601String(); // Puedes usar esta fecha para almacenar
+                                                    }
+                                                  },
+                                                ),
+                                                DropdownButton<String>(
+                                                  value: estadoPed,
+                                                  items: <String>[
+                                                    'pagado',
+                                                    'anulado',
+                                                    'pendiente'
+                                                  ].map<DropdownMenuItem<String>>(
+                                                      (String value) {
+                                                    return DropdownMenuItem<
+                                                        String>(
+                                                      value: value,
+                                                      child: Text(value),
+                                                    );
+                                                  }).toList(),
+                                                  onChanged: (String? newValue) {
+                                                    if (newValue != null) {
+                                                      estadoPed = newValue;
+                                                    }
+                                                  },
+                                                ),
+                                                TextField(
+                                                  decoration:const  InputDecoration(
+                                                      labelText: 'Observación'),
+                                                  onChanged: (value) {
+                                                    observacion = value;
+                                                  },
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment
+                                                      .spaceBetween, // Alinea los botones con espacio entre ellos
+                                                  children: [
+                                                    ElevatedButton(
                                                       onPressed: () {
-                                                        updatePedido(
-                                                          agendados[index].id,
-                                                          totalPago,
-                                                          fechaPed,
-                                                          estadoPed,
-                                                          observacion,
-                                                        );
-                                                        Navigator.pop(context);
+                                                        Navigator.pop(
+                                                            context); // Acción para el botón "Cancelar"
                                                       },
-                                                      child: const Text(
-                                                        "Actualizar",
+                                                      child:  const Text(
+                                                        "Cancelar",
                                                         style: TextStyle(
                                                           color: Colors.white,
                                                         ),
                                                       ),
                                                       style: ElevatedButton
                                                           .styleFrom(
-                                                              backgroundColor:
-                                                                  Colors.blue)),
-                                                ],
-                                              ),
-                                            ],
+                                                        backgroundColor: Colors
+                                                            .red, // Puedes cambiar el color del botón "Cancelar" si lo deseas
+                                                      ),
+                                                    ),
+                                                    ElevatedButton(
+                                                        onPressed: () {
+                                                          updatePedido(
+                                                            agendados[index].id,
+                                                            totalPago,
+                                                            fechaPed,
+                                                            estadoPed,
+                                                            observacion,
+                                                          );
+                                                          Navigator.pop(context);
+                                                        },
+                                                        child: const Text(
+                                                          "Actualizar",
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                        style: ElevatedButton
+                                                            .styleFrom(
+                                                                backgroundColor:
+                                                                    Colors.blue)),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.edit,
-                                  size: 25,
-                                  color: Color.fromARGB(255, 207, 207, 211),
+                                        );
+                                      },
+                                    );
+                                  },
+                                  icon: Icon(
+                                    Icons.edit,
+                                    size: MediaQuery.of(context).size.width /75,
+                                    color: const Color.fromARGB(255, 207, 207, 211),
+                                  ),
                                 ),
                               ),
                             ),
@@ -648,7 +657,7 @@ class _AgendadosState extends State<Agendados> {
                       },
                     )
                   : Container(
-                      color: Color.fromARGB(255, 107, 107, 107),
+                      color: const Color.fromARGB(255, 107, 107, 107),
                       child: const Center(
                         child: Text(
                           "No hay pedidos agendados.\n Espera al próximo día.",

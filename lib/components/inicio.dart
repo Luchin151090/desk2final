@@ -54,7 +54,7 @@ class _MenuState extends State<Menu> {
             backgroundColor: Color.fromARGB(255, 39, 38, 41),
             selectedIndex: _selectedIndex,
             
-            minWidth: 80,
+            minWidth: 50,
             onDestinationSelected: (index) {
               
                 setState(() {

@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:flutter_animate/flutter_animate.dart';
@@ -334,7 +335,9 @@ class _TiemporealState extends State<Tiemporeal> {
 
   Future<dynamic> getPedidos() async {
     try {
-      var empleadoIDs = 1; // o empleadoShare.getInt('empleadoID');
+    SharedPreferences empleadoShare = await SharedPreferences.getInstance();
+
+      var empleadoIDs = empleadoShare.getInt('empleadoID');
       var res = await http.get(
           Uri.parse(api + apipedidos + '/' + empleadoIDs.toString()),
           headers: {"Content-type": "application/json"});
@@ -365,7 +368,7 @@ class _TiemporealState extends State<Tiemporeal> {
             int count = 1;
             for (var i = 0; i < pedidosget.length; i++) {
               fechaparseadas = DateTime.parse(pedidosget[i].fecha.toString());
-              if (pedidosget[i].estado == 'pendiente') {
+              if (pedidosget[i].estado == 'pendiente' || pedidosget[i].estado == 'pagado') {
                 if (pedidosget[i].tipo == 'normal') {
                   if (fechaparseadas.year == now.year &&
                       fechaparseadas.month == now.month &&
@@ -467,7 +470,7 @@ class _TiemporealState extends State<Tiemporeal> {
             estado: data['estado'],
           );
 
-          if (nuevoPedido.estado == 'pendiente') {
+          if (nuevoPedido.estado == 'pendiente' || nuevoPedido.estado == 'pagado') {
             //print('esta pendiente');
             //print(nuevoPedido);
             if (nuevoPedido.tipo == 'normal') {
@@ -657,6 +660,11 @@ class _TiemporealState extends State<Tiemporeal> {
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Color.fromARGB(255, 40, 39, 39)),
+                              ),
+                              Text(
+                                "Estado :${hoypedidos[index].estado}",
+                                style: const TextStyle(
+                                    color: Color.fromARGB(255, 214, 49, 49)),
                               ),
                               Text(
                                 "Nombres :${hoypedidos[index].nombre}",
@@ -870,6 +878,11 @@ class _TiemporealState extends State<Tiemporeal> {
                               Text(
                                 "Pedido Express :${hoyexpress[index].id}",
                                 style: const TextStyle(color: Colors.white),
+                              ),
+                              Text(
+                                "Estado :${hoyexpress[index].estado}",
+                                style: const TextStyle(
+                                    color: Color.fromARGB(255, 255, 59, 59)),
                               ),
                               Text(
                                 "Nombres :${hoyexpress[index].nombre}",
