@@ -8,9 +8,9 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:flutter_animate/flutter_animate.dart';
 
 class Ruta {
   final int id;
@@ -131,7 +131,7 @@ class _TiemporealState extends State<Tiemporeal> {
 
       if (res.statusCode == 200) {
         var responseData = json.decode(res.body);
-       // print("rutass data");
+        // print("rutass data");
         //print(responseData['data']);
 
         // Asegúrate de que responseData['data'] sea una lista antes de usar map
@@ -155,12 +155,12 @@ class _TiemporealState extends State<Tiemporeal> {
             });
           }
         } else {
-         // print('No se encontraron rutas en la respuesta.');
+          // print('No se encontraron rutas en la respuesta.');
         }
       } else if (res.statusCode == 404) {
-       // print('No se encontraron rutas.');
+        // print('No se encontraron rutas.');
       } else {
-      //  print('Error inesperado: ${res.statusCode}');
+        //  print('Error inesperado: ${res.statusCode}');
       }
     } catch (error) {
       throw Exception("Error de petición: $error");
@@ -173,7 +173,7 @@ class _TiemporealState extends State<Tiemporeal> {
     if (tipo == 'normal') {
       int count = 1;
 
-     // print("----puntos normal-------");
+      // print("----puntos normal-------");
 
       // AQUI ITERA LAS COORDENADAS DE LA LISTA PUNTOSNORMAL
       // PARA QUE POR CADA ITERACION MUESTRE UN MARCADOR
@@ -188,7 +188,7 @@ class _TiemporealState extends State<Tiemporeal> {
         mapaLatPedido[LatLng(coordenada.latitude, coordenada.longitude)] =
             pedido;
 
-       // print("${coordenada.latitude} - ${coordenada.longitude}");
+        // print("${coordenada.latitude} - ${coordenada.longitude}");
         normalmarker.add(
           Marker(
             // LE AÑADO MAS TOLERANCIA PARA QUE SEA VISIBLE
@@ -198,7 +198,6 @@ class _TiemporealState extends State<Tiemporeal> {
             height: 200,
             child: GestureDetector(
               onTap: () {
-                
                 setState(() {
                   mapaLatPedido[
                           LatLng(coordenada.latitude, coordenada.longitude)]
@@ -223,7 +222,7 @@ class _TiemporealState extends State<Tiemporeal> {
                             color: Colors.white.withOpacity(0.5),
                             border: Border.all(
                                 width: 3,
-                                color: const Color.fromARGB(255, 19, 72, 115))),
+                                color: Color.fromARGB(255, 16, 133, 21))),
                         child: Center(
                             child: Text(
                           "${count}",
@@ -240,8 +239,8 @@ class _TiemporealState extends State<Tiemporeal> {
                             borderRadius: BorderRadius.circular(20),
                             image: DecorationImage(
                                 image:
-                                    AssetImage('lib/imagenes/bluefinal.png'))),
-                      ),
+                                    AssetImage('lib/imagenes/pin_verde.png'))),
+                      ).animate().fade(duration: 500.ms).scale(delay: 500.ms),
                     ],
                   ) /*Icon(Icons.location_on_outlined,
               size: 40,color: Colors.blueAccent,)*/
@@ -300,8 +299,7 @@ class _TiemporealState extends State<Tiemporeal> {
                               color: Colors.white.withOpacity(0.5),
                               border: Border.all(
                                   width: 3,
-                                  color:
-                                      const Color.fromARGB(255, 116, 92, 23))),
+                                  color: Color.fromARGB(255, 165, 180, 32))),
                           child: Center(
                               child: Text(
                             "${count}",
@@ -318,8 +316,8 @@ class _TiemporealState extends State<Tiemporeal> {
                               borderRadius: BorderRadius.circular(20),
                               image: const DecorationImage(
                                   image: AssetImage(
-                                      'lib/imagenes/amberfinal.png'))),
-                        ),
+                                      'lib/imagenes/pin_amarillo.png'))),
+                        ).animate().fade(duration: 500.ms).scale(delay: 500.ms),
                       ],
                     ) /*Icon(Icons.location_on_outlined,
               size: 40,color: Colors.blueAccent,)*/
@@ -336,9 +334,7 @@ class _TiemporealState extends State<Tiemporeal> {
 
   Future<dynamic> getPedidos() async {
     try {
-      SharedPreferences empleadoShare = await SharedPreferences.getInstance();
-      var empleadoIDs = empleadoShare.getInt('empleadoID');
-      
+      var empleadoIDs = 1; // o empleadoShare.getInt('empleadoID');
       var res = await http.get(
           Uri.parse(api + apipedidos + '/' + empleadoIDs.toString()),
           headers: {"Content-type": "application/json"});
@@ -412,7 +408,7 @@ class _TiemporealState extends State<Tiemporeal> {
             marcadoresPut("normal");
             marcadoresPut("express");
             //print("PUNTOS GET");
-           // print(puntosget);
+            // print(puntosget);
           });
         }
       }
@@ -422,7 +418,7 @@ class _TiemporealState extends State<Tiemporeal> {
   }
 
   void connectToServer() {
-   // print("-----CONEXIÓN------");
+    // print("-----CONEXIÓN------");
 
     socket = io.io(api, <String, dynamic>{
       'transports': ['websocket'],
@@ -435,51 +431,51 @@ class _TiemporealState extends State<Tiemporeal> {
     socket.connect();
 
     socket.onConnect((_) {
-     // print('Conexión establecida: EMPLEADO');
+      // print('Conexión establecida: EMPLEADO');
     });
 
     socket.onDisconnect((_) {
-    //  print('Conexión desconectada: EMPLEADO');
+      //  print('Conexión desconectada: EMPLEADO');
     });
 
     // CREATE PEDIDO WS://API/PRODUCTS
     socket.on('nuevoPedido', (data) {
-     // print('Nuevo Pedido: $data');
-     // print("es activo");
+      // print('Nuevo Pedido: $data');
+      // print("es activo");
       //print("$esactivo");
-      if(esactivo){
+      if (esactivo) {
         setState(() {
-      //  print("DENTOR DE nuevoPèdido");
-        DateTime fechaparseada = DateTime.parse(data['fecha'].toString());
+          //  print("DENTOR DE nuevoPèdido");
+          DateTime fechaparseada = DateTime.parse(data['fecha'].toString());
 
-        // CREADO POR EL SOCKET
-        Pedido nuevoPedido = Pedido(
-          id: data['id'],
-          ruta_id: data['ruta_id'] ?? 0,
-          nombre: data['nombre'] ?? '',
-          apellidos: data['apellidos'] ?? '',
-          telefono: data['telefono'] ?? '',
-          latitud: data['latitud']?.toDouble() ?? 0.0,
-          longitud: data['longitud']?.toDouble() ?? 0.0,
-          distrito: data['distrito'],
-          subtotal: data['subtotal']?.toDouble() ?? 0.0,
-          descuento: data['descuento']?.toDouble() ?? 0.0,
-          total: data['total']?.toDouble() ?? 0.0,
-          observacion: data['observacion'],
-          fecha: data['fecha'],
-          tipo: data['tipo'],
-          estado: data['estado'],
-        );
+          // CREADO POR EL SOCKET
+          Pedido nuevoPedido = Pedido(
+            id: data['id'],
+            ruta_id: data['ruta_id'] ?? 0,
+            nombre: data['nombre'] ?? '',
+            apellidos: data['apellidos'] ?? '',
+            telefono: data['telefono'] ?? '',
+            latitud: data['latitud']?.toDouble() ?? 0.0,
+            longitud: data['longitud']?.toDouble() ?? 0.0,
+            distrito: data['distrito'],
+            subtotal: data['subtotal']?.toDouble() ?? 0.0,
+            descuento: data['descuento']?.toDouble() ?? 0.0,
+            total: data['total']?.toDouble() ?? 0.0,
+            observacion: data['observacion'],
+            fecha: data['fecha'],
+            tipo: data['tipo'],
+            estado: data['estado'],
+          );
 
-        if (nuevoPedido.estado == 'pendiente') {
-          //print('esta pendiente');
-          //print(nuevoPedido);
-          if (nuevoPedido.tipo == 'normal') {
-          //  print('es normal');
-            if (fechaparseada.year == now.year &&
-                fechaparseada.month == now.month &&
-                fechaparseada.day == now.day) {
-             /* print("day");
+          if (nuevoPedido.estado == 'pendiente') {
+            //print('esta pendiente');
+            //print(nuevoPedido);
+            if (nuevoPedido.tipo == 'normal') {
+              //  print('es normal');
+              if (fechaparseada.year == now.year &&
+                  fechaparseada.month == now.month &&
+                  fechaparseada.day == now.day) {
+                /* print("day");
               print(now.day);
               print("month");
               print(now.month);
@@ -488,51 +484,50 @@ class _TiemporealState extends State<Tiemporeal> {
               print("parse");
               print(fechaparseada.hour);*/
 
-              /// SERA NECESARIO APLICAR LA LOGICA EN ESTA VISTA????????????????????????????
-              if (fechaparseada.hour < 23) {
-                //print('es antes de la 1 EN socket');
-                hoypedidos.add(nuevoPedido);
+                /// SERA NECESARIO APLICAR LA LOGICA EN ESTA VISTA????????????????????????????
+                if (fechaparseada.hour < 23) {
+                  //print('es antes de la 1 EN socket');
+                  hoypedidos.add(nuevoPedido);
 
-                // OBTENER COORDENADAS DE LOS PEDIDOS
+                  // OBTENER COORDENADAS DE LOS PEDIDOS
 
-                LatLng tempcoord = LatLng(
+                  LatLng tempcoord = LatLng(
+                      nuevoPedido.latitud ?? 0.0, nuevoPedido.longitud ?? 0.0);
+                  setState(() {
+                    puntosnormal.add(tempcoord);
+                  });
+                  marcadoresPut("normal");
+                  setState(() {
+                    // ACTUALIZAMOS LA VISTA
+                  });
+                }
+              } /*else {
+              agendados.add(nuevoPedido);
+            }*/
+            } else if (nuevoPedido.tipo == 'express') {
+              if (fechaparseada.year == now.year &&
+                  fechaparseada.month == now.month &&
+                  fechaparseada.day == now.day) {
+                // print(nuevoPedido);
+
+                hoyexpress.add(nuevoPedido);
+
+                // OBTENER COORDENADAS DE LOS EXPRESS
+                LatLng tempcoordexpress = LatLng(
                     nuevoPedido.latitud ?? 0.0, nuevoPedido.longitud ?? 0.0);
                 setState(() {
-                  puntosnormal.add(tempcoord);
+                  puntosexpress.add(tempcoordexpress);
                 });
-                marcadoresPut("normal");
+                marcadoresPut("express");
                 setState(() {
                   // ACTUALIZAMOS LA VISTA
                 });
               }
-            } /*else {
-              agendados.add(nuevoPedido);
-            }*/
-          } else if (nuevoPedido.tipo == 'express') {
-            if (fechaparseada.year == now.year &&
-                fechaparseada.month == now.month &&
-                fechaparseada.day == now.day) {
-             // print(nuevoPedido);
-
-              hoyexpress.add(nuevoPedido);
-
-              // OBTENER COORDENADAS DE LOS EXPRESS
-              LatLng tempcoordexpress = LatLng(
-                  nuevoPedido.latitud ?? 0.0, nuevoPedido.longitud ?? 0.0);
-              setState(() {
-                puntosexpress.add(tempcoordexpress);
-              });
-              marcadoresPut("express");
-              setState(() {
-                // ACTUALIZAMOS LA VISTA
-              });
             }
           }
-        }
-        // SI EL PEDIDO TIENE FECHA DE HOY Y ES NORMAL
-      });
-     }
-      
+          // SI EL PEDIDO TIENE FECHA DE HOY Y ES NORMAL
+        });
+      }
 
       // Desplaza automáticamente hacia el último elemento
       if (_scrollController3.hasClients) {
@@ -573,9 +568,9 @@ class _TiemporealState extends State<Tiemporeal> {
     });*/
 
     socket.on('vista', (data) async {
-    //  print("...recibiendo..");
+      //  print("...recibiendo..");
       //getPedidos();
-     // print(data);
+      // print(data);
       //socket.emit(await getPedidos());
 
       /*  try {
@@ -603,8 +598,8 @@ class _TiemporealState extends State<Tiemporeal> {
   @override
   void dispose() {
     esactivo = false;
-  //  print("esactivo dispose");
-   // print(esactivo);
+    //  print("esactivo dispose");
+    // print(esactivo);
     socket.disconnect();
     socket.dispose();
     _scrollController2.dispose();
@@ -628,7 +623,7 @@ class _TiemporealState extends State<Tiemporeal> {
         Text(
           "Tiempo Real",
           style: TextStyle(
-              color: Colors.white,
+              //color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: MediaQuery.of(context).size.height / 45),
         ),
@@ -651,7 +646,7 @@ class _TiemporealState extends State<Tiemporeal> {
                           width: 150,
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 215, 239, 59),
+                              color: Color.fromARGB(255, 57, 175, 42),
                               borderRadius: BorderRadius.circular(20)),
                           margin: const EdgeInsets.all(10),
                           child: Column(
@@ -659,8 +654,8 @@ class _TiemporealState extends State<Tiemporeal> {
                             children: [
                               Text(
                                 "Pedido: ${hoypedidos[index].id}",
-                                style:const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
                                     color: Color.fromARGB(255, 40, 39, 39)),
                               ),
                               Text(
@@ -670,7 +665,7 @@ class _TiemporealState extends State<Tiemporeal> {
                               ),
                               Text(
                                 "Distrito :${hoypedidos[index].distrito}",
-                                style:const TextStyle(
+                                style: const TextStyle(
                                     color: Color.fromARGB(255, 56, 56, 56)),
                               ),
                               Text(
@@ -689,7 +684,7 @@ class _TiemporealState extends State<Tiemporeal> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 215, 239, 59),
+                              color: const Color.fromARGB(255, 57, 175, 42),
                               borderRadius: BorderRadius.circular(50)),
                           child: IconButton(
                               onPressed: () {
@@ -786,7 +781,7 @@ class _TiemporealState extends State<Tiemporeal> {
                                                               );
                                                             },
                                                           );
-                                                          
+
                                                           await updaterutapedido(
                                                               hoypedidos[index]
                                                                   .id,
@@ -796,19 +791,17 @@ class _TiemporealState extends State<Tiemporeal> {
                                                               context);
                                                           Navigator.pop(
                                                               context);
-                                                              setState(() {
-                                                                
-                                                              });
+                                                          setState(() {});
                                                         },
                                                         style: ButtonStyle(
                                                             backgroundColor:
                                                                 WidgetStateProperty
                                                                     .all(const Color
                                                                         .fromARGB(
-                                                                            255,
-                                                                            69,
-                                                                            57,
-                                                                            204))),
+                                                                        255,
+                                                                        69,
+                                                                        57,
+                                                                        204))),
                                                         child: const Text(
                                                           "Confirmar",
                                                           style: TextStyle(
@@ -839,8 +832,8 @@ class _TiemporealState extends State<Tiemporeal> {
                   //color: Colors.grey,
                   height: MediaQuery.of(context).size.height / 2.45,
                   width: 250,
-                  decoration: const BoxDecoration(
-                      color: Color.fromARGB(255, 255, 255, 255)),
+                  decoration: const BoxDecoration(),
+                  //color: Color.fromARGB(255, 255, 255, 255)),
                   child: const Center(
                       child: Text(
                     "No hay pedidos Normales",
@@ -865,10 +858,10 @@ class _TiemporealState extends State<Tiemporeal> {
                         Container(
                           height: 170,
                           width: 150,
-                          padding:const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                              color:const Color.fromARGB(255, 50, 89, 229)
-                                  .withOpacity(0.5),
+                              color: Color.fromARGB(255, 185, 218, 40),
+                              //.withOpacity(0.5),
                               borderRadius: BorderRadius.circular(20)),
                           margin: const EdgeInsets.all(10),
                           child: Column(
@@ -876,19 +869,19 @@ class _TiemporealState extends State<Tiemporeal> {
                             children: [
                               Text(
                                 "Pedido Express :${hoyexpress[index].id}",
-                                style:const  TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Colors.white),
                               ),
                               Text(
                                 "Nombres :${hoyexpress[index].nombre}",
-                                style:const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Colors.white),
                               ),
                               Text(
                                 "Distrito :${hoyexpress[index].distrito}",
-                                style:const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Colors.white),
                               ),
                               Text(
                                 "Total: ${hoyexpress[index].total}",
-                                style:const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Colors.white),
                               ),
                               Text("Fechas: ${hoyexpress[index].fecha}")
                             ],
@@ -901,7 +894,7 @@ class _TiemporealState extends State<Tiemporeal> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 67, 79, 211),
+                              color: const Color.fromARGB(255, 185, 218, 40),
                               borderRadius: BorderRadius.circular(50)),
                           child: IconButton(
                               onPressed: () {
@@ -924,7 +917,8 @@ class _TiemporealState extends State<Tiemporeal> {
                                               6,
                                           padding: const EdgeInsets.all(11),
                                           child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.center,
                                             children: [
@@ -964,16 +958,14 @@ class _TiemporealState extends State<Tiemporeal> {
                                                   children: [
                                                     ElevatedButton(
                                                         onPressed: () {
-                                                          setState(() {
-                                                            
-                                                          });
+                                                          setState(() {});
                                                           Navigator.pop(
                                                               context);
                                                         },
                                                         child:
                                                             Text("Cancelar")),
                                                     ElevatedButton(
-                                                        onPressed: () async{
+                                                        onPressed: () async {
                                                           showDialog(
                                                             context: context,
                                                             builder:
@@ -1010,14 +1002,17 @@ class _TiemporealState extends State<Tiemporeal> {
                                                               context);
                                                           Navigator.pop(
                                                               context);
-                                                              setState(() {
-                                                                
-                                                              });
+                                                          setState(() {});
                                                         },
                                                         style: ButtonStyle(
                                                             backgroundColor:
                                                                 WidgetStateProperty
-                                                                    .all(const Color.fromARGB(255, 60, 93, 224))),
+                                                                    .all(const Color
+                                                                        .fromARGB(
+                                                                        255,
+                                                                        60,
+                                                                        93,
+                                                                        224))),
                                                         child: const Text(
                                                           "Confirmar",
                                                           style: TextStyle(
@@ -1036,7 +1031,7 @@ class _TiemporealState extends State<Tiemporeal> {
                               icon: const Icon(
                                 Icons.add,
                                 size: 25,
-                                color: Color.fromARGB(255, 255, 230, 0),
+                                color: Color.fromARGB(255, 5, 1, 14),
                               )),
                         ),
                       ],
@@ -1048,8 +1043,8 @@ class _TiemporealState extends State<Tiemporeal> {
                   //color: Colors.grey,
                   height: MediaQuery.of(context).size.height / 2.45,
                   width: 250,
-                  decoration: const BoxDecoration(
-                      color: Color.fromARGB(255, 255, 255, 255)),
+                  decoration: const BoxDecoration(),
+                  //color: Color.fromARGB(255, 255, 255, 255)),
                   child: const Center(
                       child: Text(
                     "No hay pedidos Express",

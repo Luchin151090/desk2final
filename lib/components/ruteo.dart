@@ -372,6 +372,23 @@ class _RuteoState extends State<Ruteo> {
     }
   }
 
+  Future<void> cancelarPedido(int pedidoId, String motivo) async {
+    final String api = dotenv.env['API_URL'] ?? '';
+    final response = await http.delete(
+      Uri.parse('$api/api/revertirpedidocan/$pedidoId'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'motivoped': motivo,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to cancel pedido');
+    }
+  }
+
   Future<void> updateVehiculoStock(
       int vehiculoId, int productoId, int newStock) async {
     //String api = dotenv.env['API_URL'] ?? 'http://127.0.0.1:4000';
@@ -698,8 +715,12 @@ class _RuteoState extends State<Ruteo> {
               distrito: data['distrito'],
               direccion: data['direccion']);
         }).toList();
+
+        tempPedido =
+            tempPedido.where((pedido) => pedido.estado != "anulado").toList();
+
         if (mounted) {
-          pedidosruta = tempPedido;
+          pedidosruta = tempPedido.isEmpty ? [] : tempPedido;
         }
       }
     } catch (error) {
@@ -1041,7 +1062,7 @@ class _RuteoState extends State<Ruteo> {
             // Convertir el Set a una lista
             distrito_de_pedido = distritosSet.toList();
             print("distritos");
-            print(distrito_de_pedido);
+            // print(distrito_de_pedido);
 
             // AHORA ITERO EN TODOS LOS PEDIDOS Y LO RELACIONO SOLO CON LOS DISTRITOS QUE OBTUVE
             for (var x = 0; x < distrito_de_pedido.length; x++) {
@@ -1092,7 +1113,7 @@ class _RuteoState extends State<Ruteo> {
                     pedidosget[i].longitud = coordGET.longitude;
                     agendados.add(pedidosget[i]);
                     print("......AGENDADOS");
-                    print(agendados);
+                    // print(agendados);
                   }
                 }
               }
@@ -2677,7 +2698,7 @@ class _RuteoState extends State<Ruteo> {
                                 itemCount: numeroruta,
                                 itemBuilder: (BuildContext context, int index) {
                                   return Container(
-                                    height: 150,
+                                    height: 180,
                                     margin: const EdgeInsets.all(5),
                                     padding: const EdgeInsets.all(5),
                                     decoration: BoxDecoration(
@@ -2936,6 +2957,54 @@ class _RuteoState extends State<Ruteo> {
                                                 "Conductor: ${rutasempleado[index].conductorid}"),
                                           ],
                                         ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Container(
+                                              height: MediaQuery.of(context)
+                                                      .size
+                                                      .height /
+                                                  50,
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width /
+                                                  10,
+                                              child: Text(
+                                                "Nombre: ${conductorget.firstWhere((chofer) => chofer.id == rutasempleado[index].conductorid, orElse: () => Conductor(id: 0, nombres: 'No encontrado', apellidos: 'NA', licencia: 'NA', dni: "NA", fecha_nacimiento: "2024-10-21")).nombres}",
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Container(
+                                              height: MediaQuery.of(context)
+                                                      .size
+                                                      .height /
+                                                  50,
+                                              width: MediaQuery.of(context)
+                                                      .size
+                                                      .width /
+                                                  10,
+                                              child: Text(
+                                                "Apellidos: ${conductorget.firstWhere((chofer) => chofer.id == rutasempleado[index].conductorid, orElse: () => Conductor(id: 0, nombres: 'No encontrado', apellidos: 'NA', licencia: 'NA', dni: "NA", fecha_nacimiento: "2024-10-21")).apellidos}",
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                         // VEHICULO - EDIT - DELETE
                                         Row(
                                           mainAxisAlignment:
@@ -2962,319 +3031,331 @@ class _RuteoState extends State<Ruteo> {
                                                       context: context,
                                                       builder: (BuildContext
                                                           context) {
-                                                        return Dialog(
-                                                          child: Container(
-                                                            width: MediaQuery.of(
-                                                                        context)
-                                                                    .size
-                                                                    .width /
-                                                                1.25,
-                                                            height: 600,
-                                                            child: Column(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                Text(
-                                                                  "Editar ruta",
-                                                                  style:
-                                                                      TextStyle(
-                                                                    fontSize: MediaQuery.of(context)
-                                                                            .size
-                                                                            .height /
-                                                                        25,
-                                                                    color: Color
-                                                                        .fromARGB(
-                                                                            255,
-                                                                            70,
-                                                                            58,
-                                                                            77),
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                  ),
-                                                                ),
-                                                                Row(
-                                                                  crossAxisAlignment:
-                                                                      CrossAxisAlignment
-                                                                          .start,
-                                                                  children: [
-                                                                    // Columna 1: Inputs y Dropdowns
-                                                                    const SizedBox(
-                                                                        width:
-                                                                            20),
-
-                                                                    Container(
-                                                                      width: MediaQuery.of(context)
-                                                                              .size
-                                                                              .width /
-                                                                          6,
-                                                                      height:
+                                                        return StatefulBuilder(
+                                                            builder: (BuildContext
+                                                                    context,
+                                                                StateSetter
+                                                                    setStateDialog) {
+                                                          return Dialog(
+                                                            child: Container(
+                                                              width: MediaQuery.of(
+                                                                          context)
+                                                                      .size
+                                                                      .width /
+                                                                  1.25,
+                                                              height: 700,
+                                                              child: Column(
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .center,
+                                                                children: [
+                                                                  Text(
+                                                                    "Editar ruta",
+                                                                    style:
+                                                                        TextStyle(
+                                                                      fontSize:
                                                                           MediaQuery.of(context).size.height /
-                                                                              2,
-                                                                      padding: const EdgeInsets
-                                                                          .all(
-                                                                          10),
-                                                                      color: const Color
-                                                                          .fromARGB(
+                                                                              25,
+                                                                      color: Color.fromARGB(
                                                                           255,
-                                                                          109,
-                                                                          105,
-                                                                          129),
-                                                                      child:
-                                                                          Column(
-                                                                        crossAxisAlignment:
-                                                                            CrossAxisAlignment.start,
-                                                                        children: [
-                                                                          // Campo de texto para el nombre de la ruta
-                                                                          Center(
-                                                                            child:
-                                                                                Container(
-                                                                              height: 100,
-                                                                              child: const Center(
-                                                                                child: Text(
-                                                                                  "Actualización conductores o vehículos",
-                                                                                  textAlign: TextAlign.center,
-                                                                                  style: TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 0, 0, 0)),
+                                                                          70,
+                                                                          58,
+                                                                          77),
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                    ),
+                                                                  ),
+                                                                  Row(
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .start,
+                                                                    children: [
+                                                                      // Columna 1: Inputs y Dropdowns
+                                                                      const SizedBox(
+                                                                          width:
+                                                                              20),
+
+                                                                      Container(
+                                                                        width:
+                                                                            MediaQuery.of(context).size.width /
+                                                                                6,
+                                                                        height:
+                                                                            MediaQuery.of(context).size.height /
+                                                                                2,
+                                                                        padding: const EdgeInsets
+                                                                            .all(
+                                                                            10),
+                                                                        color: const Color
+                                                                            .fromARGB(
+                                                                            255,
+                                                                            109,
+                                                                            105,
+                                                                            129),
+                                                                        child:
+                                                                            Column(
+                                                                          crossAxisAlignment:
+                                                                              CrossAxisAlignment.start,
+                                                                          children: [
+                                                                            // Campo de texto para el nombre de la ruta
+                                                                            Center(
+                                                                              child: Container(
+                                                                                height: 100,
+                                                                                child: const Center(
+                                                                                  child: Text(
+                                                                                    "Actualización conductores o vehículos",
+                                                                                    textAlign: TextAlign.center,
+                                                                                    style: TextStyle(fontWeight: FontWeight.bold, color: Color.fromARGB(255, 0, 0, 0)),
+                                                                                  ),
                                                                                 ),
                                                                               ),
                                                                             ),
-                                                                          ),
 
-                                                                          // Dropdown para conductores
-                                                                          Container(
-                                                                            width:
-                                                                                MediaQuery.of(context).size.width / 6,
-                                                                            color:
-                                                                                Colors.white,
-                                                                            padding:
-                                                                                const EdgeInsets.all(8),
-                                                                            margin:
-                                                                                const EdgeInsets.only(bottom: 16),
-                                                                            child:
-                                                                                Row(
-                                                                              children: [
-                                                                                Container(
-                                                                                  width: 180,
-                                                                                  child: Column(
-                                                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                                                    children: [
-                                                                                      const Text("Conductores"),
-                                                                                      StatefulBuilder(
-                                                                                        builder: (BuildContext context, StateSetter setState) {
-                                                                                          return DropdownButton<Conductor>(
-                                                                                            hint: const Text(
-                                                                                              'Selecciona un conductor',
-                                                                                              style: TextStyle(fontSize: 13),
-                                                                                            ),
-                                                                                            value: selectedConductor,
-                                                                                            items: conductorget.map((Conductor chofer) {
-                                                                                              return DropdownMenuItem<Conductor>(
-                                                                                                value: chofer,
-                                                                                                child: Text(chofer.nombres),
-                                                                                              );
-                                                                                            }).toList(),
-                                                                                            onChanged: (Conductor? newValue) {
-                                                                                              setState(() {
-                                                                                                selectedConductor = newValue;
-                                                                                              });
-                                                                                            },
-                                                                                          );
-                                                                                        },
-                                                                                      ),
-                                                                                    ],
+                                                                            // Dropdown para conductores
+                                                                            Container(
+                                                                              width: MediaQuery.of(context).size.width / 6,
+                                                                              color: Colors.white,
+                                                                              padding: const EdgeInsets.all(8),
+                                                                              margin: const EdgeInsets.only(bottom: 16),
+                                                                              child: Row(
+                                                                                children: [
+                                                                                  Container(
+                                                                                    width: 180,
+                                                                                    child: Column(
+                                                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                                                      children: [
+                                                                                        const Text("Conductores"),
+                                                                                        StatefulBuilder(
+                                                                                          builder: (BuildContext context, StateSetter setState) {
+                                                                                            return DropdownButton<Conductor>(
+                                                                                              hint: const Text(
+                                                                                                'Selecciona un conductor',
+                                                                                                style: TextStyle(fontSize: 13),
+                                                                                              ),
+                                                                                              value: selectedConductor,
+                                                                                              items: conductorget.map((Conductor chofer) {
+                                                                                                return DropdownMenuItem<Conductor>(
+                                                                                                  value: chofer,
+                                                                                                  child: Text(chofer.nombres),
+                                                                                                );
+                                                                                              }).toList(),
+                                                                                              onChanged: (Conductor? newValue) {
+                                                                                                setState(() {
+                                                                                                  selectedConductor = newValue;
+                                                                                                });
+                                                                                              },
+                                                                                            );
+                                                                                          },
+                                                                                        ),
+                                                                                      ],
+                                                                                    ),
                                                                                   ),
-                                                                                ),
-                                                                                Container(
-                                                                                  child: Row(
-                                                                                    children: [
-                                                                                      Container(
-                                                                                        decoration: BoxDecoration(color: Colors.yellow, borderRadius: BorderRadius.circular(20)),
-                                                                                        child: IconButton(
-                                                                                            onPressed: () {
-                                                                                              if (selectedConductor != null) {}
-                                                                                            },
-                                                                                            icon: const Icon(
-                                                                                              Icons.update,
-                                                                                              color: Colors.red,
-                                                                                            )),
-                                                                                      )
-                                                                                    ],
-                                                                                  ),
-                                                                                )
-                                                                              ],
-                                                                            ),
-                                                                          ),
-                                                                          // Dropdown para vehículos
-                                                                          Container(
-                                                                            color:
-                                                                                Colors.white,
-                                                                            width:
-                                                                                MediaQuery.of(context).size.width / 6,
-                                                                            padding:
-                                                                                const EdgeInsets.all(8),
-                                                                            margin:
-                                                                                const EdgeInsets.only(bottom: 16),
-                                                                            child:
-                                                                                Row(
-                                                                              children: [
-                                                                                Container(
-                                                                                  width: 180,
-                                                                                  child: Column(
-                                                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                                                    children: [
-                                                                                      const Text("Vehículos"),
-                                                                                      StatefulBuilder(
-                                                                                        builder: (BuildContext context, StateSetter setState) {
-                                                                                          return DropdownButton<Vehiculo>(
-                                                                                            isExpanded: true,
-                                                                                            hint: const Text(
-                                                                                              'Selecciona un vehículo',
-                                                                                              style: TextStyle(fontSize: 13),
-                                                                                            ),
-                                                                                            value: selectedVehiculo,
-                                                                                            items: vehiculos.map((Vehiculo auto) {
-                                                                                              return DropdownMenuItem<Vehiculo>(
-                                                                                                value: auto,
-                                                                                                child: Text(auto.nombre_modelo),
-                                                                                              );
-                                                                                            }).toList(),
-                                                                                            onChanged: (Vehiculo? newValue) {
-                                                                                              setState(() {
-                                                                                                selectedVehiculo = newValue;
-                                                                                              });
-                                                                                            },
-                                                                                          );
-                                                                                        },
-                                                                                      ),
-                                                                                    ],
-                                                                                  ),
-                                                                                ),
-                                                                                Container(
-                                                                                  child: Row(
-                                                                                    children: [
-                                                                                      Container(
-                                                                                        decoration: BoxDecoration(color: Colors.yellow, borderRadius: BorderRadius.circular(20)),
-                                                                                        child: IconButton(
-                                                                                            onPressed: () {},
-                                                                                            icon: const Icon(
-                                                                                              Icons.update,
-                                                                                              color: Colors.red,
-                                                                                            )),
-                                                                                      )
-                                                                                    ],
-                                                                                  ),
-                                                                                )
-                                                                              ],
-                                                                            ),
-                                                                          ),
-                                                                        ],
-                                                                      ),
-                                                                    ),
-
-                                                                    // Columna 2: Distritos con pedidos
-                                                                    const SizedBox(
-                                                                        width:
-                                                                            20),
-                                                                    Container(
-                                                                      width: MediaQuery.of(context)
-                                                                              .size
-                                                                              .width /
-                                                                          2.5,
-                                                                      height:
-                                                                          MediaQuery.of(context).size.height /
-                                                                              2,
-                                                                      padding: const EdgeInsets
-                                                                          .all(
-                                                                          10),
-                                                                      color: const Color
-                                                                          .fromARGB(
-                                                                          255,
-                                                                          109,
-                                                                          105,
-                                                                          129),
-                                                                      child: distrito_de_pedido.length >
-                                                                              0
-                                                                          ? Column(
-                                                                              children: [
-                                                                                const Text(
-                                                                                  "Adición de pedidos (opcional)",
-                                                                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                                                                ),
-                                                                                GestureDetector(
-                                                                                  behavior: HitTestBehavior.translucent,
-                                                                                  onHorizontalDragUpdate: (details) {
-                                                                                    _scrollController3.jumpTo(_scrollController3.position.pixels + details.primaryDelta!);
-                                                                                  },
-                                                                                  child: SingleChildScrollView(
-                                                                                    controller: _scrollController3,
-                                                                                    scrollDirection: Axis.horizontal,
+                                                                                  Container(
                                                                                     child: Row(
-                                                                                      children: List.generate(
-                                                                                        distrito_de_pedido.length,
-                                                                                        (index) => Container(
-                                                                                          width: 250,
-                                                                                          margin: const EdgeInsets.only(left: 10),
-                                                                                          padding: const EdgeInsets.all(8),
-                                                                                          child: Card(
-                                                                                            elevation: 8,
-                                                                                            color: Colors.white,
-                                                                                            child: Padding(
-                                                                                              padding: const EdgeInsets.all(8.0),
-                                                                                              child: Column(
-                                                                                                children: [
-                                                                                                  Text(
-                                                                                                    distrito_de_pedido[index],
-                                                                                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                                                                                  ), //distrito_de_pedido[index].nombre),
-                                                                                                  Container(
-                                                                                                    width: 200,
-                                                                                                    height: 200,
-                                                                                                    margin: const EdgeInsets.all(5),
-                                                                                                    child: ListView.builder(
-                                                                                                      itemCount: distrito_pedido['${distrito_de_pedido[index]}']!.length,
-                                                                                                      itemBuilder: (BuildContext context, int index2) {
-                                                                                                        return StatefulBuilder(
-                                                                                                          builder: (BuildContext context, StateSetter setState) {
-                                                                                                            return Container(
-                                                                                                              margin: const EdgeInsets.all(5),
-                                                                                                              color: const Color.fromARGB(255, 153, 218, 222),
-                                                                                                              child: CheckboxListTile(
-                                                                                                                value: distrito_pedido['${distrito_de_pedido[index]}']?[index2].seleccionado,
-                                                                                                                onChanged: (bool? value) {
-                                                                                                                  setState(() {
-                                                                                                                    //  print("seleccionando");
+                                                                                      children: [
+                                                                                        Container(
+                                                                                          decoration: BoxDecoration(color: Colors.yellow, borderRadius: BorderRadius.circular(20)),
+                                                                                          child: IconButton(
+                                                                                              onPressed: () {
+                                                                                                if (selectedConductor != null) {}
+                                                                                              },
+                                                                                              icon: const Icon(
+                                                                                                Icons.update,
+                                                                                                color: Colors.red,
+                                                                                              )),
+                                                                                        )
+                                                                                      ],
+                                                                                    ),
+                                                                                  )
+                                                                                ],
+                                                                              ),
+                                                                            ),
+                                                                            // Dropdown para vehículos
+                                                                            Container(
+                                                                              color: Colors.white,
+                                                                              width: MediaQuery.of(context).size.width / 6,
+                                                                              padding: const EdgeInsets.all(8),
+                                                                              margin: const EdgeInsets.only(bottom: 16),
+                                                                              child: Row(
+                                                                                children: [
+                                                                                  Container(
+                                                                                    width: 180,
+                                                                                    child: Column(
+                                                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                                                      children: [
+                                                                                        const Text("Vehículos"),
+                                                                                        StatefulBuilder(
+                                                                                          builder: (BuildContext context, StateSetter setState) {
+                                                                                            return DropdownButton<Vehiculo>(
+                                                                                              isExpanded: true,
+                                                                                              hint: const Text(
+                                                                                                'Selecciona un vehículo',
+                                                                                                style: TextStyle(fontSize: 13),
+                                                                                              ),
+                                                                                              value: selectedVehiculo,
+                                                                                              items: vehiculos.map((Vehiculo auto) {
+                                                                                                return DropdownMenuItem<Vehiculo>(
+                                                                                                  value: auto,
+                                                                                                  child: Text(auto.nombre_modelo),
+                                                                                                );
+                                                                                              }).toList(),
+                                                                                              onChanged: (Vehiculo? newValue) {
+                                                                                                setState(() {
+                                                                                                  selectedVehiculo = newValue;
+                                                                                                });
+                                                                                              },
+                                                                                            );
+                                                                                          },
+                                                                                        ),
+                                                                                      ],
+                                                                                    ),
+                                                                                  ),
+                                                                                  Container(
+                                                                                    child: Row(
+                                                                                      children: [
+                                                                                        Container(
+                                                                                          decoration: BoxDecoration(color: Colors.yellow, borderRadius: BorderRadius.circular(20)),
+                                                                                          child: IconButton(
+                                                                                              onPressed: () {},
+                                                                                              icon: const Icon(
+                                                                                                Icons.update,
+                                                                                                color: Colors.red,
+                                                                                              )),
+                                                                                        )
+                                                                                      ],
+                                                                                    ),
+                                                                                  )
+                                                                                ],
+                                                                              ),
+                                                                            ),
+                                                                          ],
+                                                                        ),
+                                                                      ),
 
-                                                                                                                    distrito_pedido['${distrito_de_pedido[index]}']?[index2].seleccionado = value!;
-                                                                                                                    if (distrito_pedido['${distrito_de_pedido[index]}']![index2].seleccionado) {
-                                                                                                                      if (!idPedidosSeleccionados.contains(distrito_pedido['${distrito_de_pedido[index]}']?[index2].id)) {
-                                                                                                                        idPedidosSeleccionados.add(distrito_pedido['${distrito_de_pedido[index]}']![index2].id);
+                                                                      // Columna 2: Distritos con pedidos
+                                                                      const SizedBox(
+                                                                          width:
+                                                                              20),
+                                                                      Container(
+                                                                        width: MediaQuery.of(context).size.width /
+                                                                            2.5,
+                                                                        height:
+                                                                            MediaQuery.of(context).size.height /
+                                                                                2,
+                                                                        padding: const EdgeInsets
+                                                                            .all(
+                                                                            10),
+                                                                        color: const Color
+                                                                            .fromARGB(
+                                                                            255,
+                                                                            109,
+                                                                            105,
+                                                                            129),
+                                                                        child: distrito_de_pedido.length >
+                                                                                0
+                                                                            ? Column(
+                                                                                children: [
+                                                                                  const Text(
+                                                                                    "Adición de pedidos (opcional)",
+                                                                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                                                                  ),
+                                                                                  GestureDetector(
+                                                                                    behavior: HitTestBehavior.translucent,
+                                                                                    onHorizontalDragUpdate: (details) {
+                                                                                      _scrollController3.jumpTo(_scrollController3.position.pixels + details.primaryDelta!);
+                                                                                    },
+                                                                                    child: SingleChildScrollView(
+                                                                                      controller: _scrollController3,
+                                                                                      scrollDirection: Axis.horizontal,
+                                                                                      child: Row(
+                                                                                        children: List.generate(
+                                                                                          distrito_de_pedido.length,
+                                                                                          (index) => Container(
+                                                                                            width: 250,
+                                                                                            margin: const EdgeInsets.only(left: 10),
+                                                                                            padding: const EdgeInsets.all(8),
+                                                                                            child: Card(
+                                                                                              elevation: 8,
+                                                                                              color: Colors.white,
+                                                                                              child: Padding(
+                                                                                                padding: const EdgeInsets.all(8.0),
+                                                                                                child: Column(
+                                                                                                  children: [
+                                                                                                    Text(
+                                                                                                      distrito_de_pedido[index],
+                                                                                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                                                                                    ), //distrito_de_pedido[index].nombre),
+                                                                                                    Container(
+                                                                                                      width: 200,
+                                                                                                      height: 200,
+                                                                                                      margin: const EdgeInsets.all(5),
+                                                                                                      child: ListView.builder(
+                                                                                                        itemCount: distrito_pedido['${distrito_de_pedido[index]}']!.length,
+                                                                                                        itemBuilder: (BuildContext context, int index2) {
+                                                                                                          return StatefulBuilder(
+                                                                                                            builder: (BuildContext context, StateSetter setState) {
+                                                                                                              return Container(
+                                                                                                                margin: const EdgeInsets.all(5),
+                                                                                                                color: const Color.fromARGB(255, 153, 218, 222),
+                                                                                                                child: CheckboxListTile(
+                                                                                                                  value: distrito_pedido['${distrito_de_pedido[index]}']?[index2].seleccionado,
+                                                                                                                  onChanged: (bool? value) {
+                                                                                                                    setState(() {
+                                                                                                                      //  print("seleccionando");
+
+                                                                                                                      distrito_pedido['${distrito_de_pedido[index]}']?[index2].seleccionado = value!;
+                                                                                                                      if (distrito_pedido['${distrito_de_pedido[index]}']![index2].seleccionado) {
+                                                                                                                        if (!idPedidosSeleccionados.contains(distrito_pedido['${distrito_de_pedido[index]}']?[index2].id)) {
+                                                                                                                          idPedidosSeleccionados.add(distrito_pedido['${distrito_de_pedido[index]}']![index2].id);
+                                                                                                                        }
+                                                                                                                      } else {
+                                                                                                                        idPedidosSeleccionados.remove(distrito_pedido['${distrito_de_pedido[index]}']![index2].id);
                                                                                                                       }
-                                                                                                                    } else {
-                                                                                                                      idPedidosSeleccionados.remove(distrito_pedido['${distrito_de_pedido[index]}']![index2].id);
-                                                                                                                    }
-                                                                                                                    print("sele actual");
-                                                                                                                    print(distrito_pedido['${distrito_de_pedido[index]}']?[index2].seleccionado);
-                                                                                                                    print("id seleccionado");
-                                                                                                                    print(idPedidosSeleccionados);
-                                                                                                                  });
-                                                                                                                },
-                                                                                                                title: Text(
-                                                                                                                  "N° ${distrito_pedido['${distrito_de_pedido[index]}']?[index2].id}",
-                                                                                                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                                                                                                      print("sele actual");
+                                                                                                                      print(distrito_pedido['${distrito_de_pedido[index]}']?[index2].seleccionado);
+                                                                                                                      print("id seleccionado");
+                                                                                                                      print(idPedidosSeleccionados);
+                                                                                                                    });
+                                                                                                                  },
+                                                                                                                  title: Text(
+                                                                                                                    "N° ${distrito_pedido['${distrito_de_pedido[index]}']?[index2].id}",
+                                                                                                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                                                                                                  ),
+                                                                                                                  subtitle: Column(
+                                                                                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                                                                                    children: [
+                                                                                                                      Text(
+                                                                                                                        "Nombres: ${distrito_pedido[distrito_de_pedido[index]]?[index2].nombre}",
+                                                                                                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                                                                                                      ),
+                                                                                                                      Text(
+                                                                                                                        "Apellidos: ${distrito_pedido[distrito_de_pedido[index]]?[index2].apellidos}",
+                                                                                                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                                                                                                      ),
+                                                                                                                      Text(
+                                                                                                                        "Telefono: ${distrito_pedido[distrito_de_pedido[index]]?[index2].telefono}",
+                                                                                                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                                                                                                      ),
+                                                                                                                      Text(
+                                                                                                                        "Total: ${distrito_pedido[distrito_de_pedido[index]]?[index2].total}",
+                                                                                                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                                                                                                      ),
+                                                                                                                      Text(
+                                                                                                                        "Tipo: ${distrito_pedido[distrito_de_pedido[index]]?[index2].tipo}",
+                                                                                                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                                                                                                      ),
+                                                                                                                      // Agrega más campos según sea necesario
+                                                                                                                    ],
+                                                                                                                  ),
                                                                                                                 ),
-                                                                                                                subtitle: Text(
-                                                                                                                  "${distrito_pedido['${distrito_de_pedido[index]}']?[index2].nombre}",
-                                                                                                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                                                                                                ),
-                                                                                                              ),
-                                                                                                            );
-                                                                                                          },
-                                                                                                        );
-                                                                                                      },
-                                                                                                    ),
-                                                                                                  )
-                                                                                                ],
+                                                                                                              );
+                                                                                                            },
+                                                                                                          );
+                                                                                                        },
+                                                                                                      ),
+                                                                                                    )
+                                                                                                  ],
+                                                                                                ),
                                                                                               ),
                                                                                             ),
                                                                                           ),
@@ -3282,300 +3363,424 @@ class _RuteoState extends State<Ruteo> {
                                                                                       ),
                                                                                     ),
                                                                                   ),
+                                                                                ],
+                                                                              )
+                                                                            : const Center(
+                                                                                child: Text(
+                                                                                  "No hay pedidos agendados",
+                                                                                  textAlign: TextAlign.center,
+                                                                                  style: TextStyle(fontWeight: FontWeight.bold),
                                                                                 ),
-                                                                              ],
-                                                                            )
-                                                                          : const Center(
-                                                                              child: Text(
-                                                                                "No hay pedidos agendados",
-                                                                                textAlign: TextAlign.center,
-                                                                                style: TextStyle(fontWeight: FontWeight.bold),
                                                                               ),
-                                                                            ),
-                                                                    ),
+                                                                      ),
 
-                                                                    // Columna 3: Pedidos con ícono de borrar
-                                                                    //const SizedBox(height: 30),
-                                                                    const SizedBox(
+                                                                      // Columna 3: Pedidos con ícono de borrar
+                                                                      //const SizedBox(height: 30),
+                                                                      const SizedBox(
+                                                                          width:
+                                                                              30),
+                                                                      Container(
                                                                         width:
-                                                                            30),
-                                                                    Container(
-                                                                      width: MediaQuery.of(context)
-                                                                              .size
-                                                                              .width /
-                                                                          6,
-                                                                      height:
-                                                                          MediaQuery.of(context).size.height /
-                                                                              2,
-                                                                      padding: const EdgeInsets
-                                                                          .all(
-                                                                          10),
-                                                                      color: const Color
-                                                                          .fromARGB(
-                                                                          255,
-                                                                          109,
-                                                                          105,
-                                                                          129),
-                                                                      child:
-                                                                          Column(
-                                                                        crossAxisAlignment:
-                                                                            CrossAxisAlignment.start,
-                                                                        children: [
-                                                                          const Center(
-                                                                            child:
-                                                                                Text(
-                                                                              'Pedidos Ruta',
-                                                                              style: TextStyle(
-                                                                                fontSize: 16,
-                                                                                fontWeight: FontWeight.bold,
-                                                                                color: Colors.black,
+                                                                            MediaQuery.of(context).size.width /
+                                                                                6,
+                                                                        height:
+                                                                            MediaQuery.of(context).size.height /
+                                                                                2,
+                                                                        padding: const EdgeInsets
+                                                                            .all(
+                                                                            10),
+                                                                        color: const Color
+                                                                            .fromARGB(
+                                                                            255,
+                                                                            109,
+                                                                            105,
+                                                                            129),
+                                                                        child:
+                                                                            Column(
+                                                                          crossAxisAlignment:
+                                                                              CrossAxisAlignment.start,
+                                                                          children: [
+                                                                            const Center(
+                                                                              child: Text(
+                                                                                'Pedidos Ruta',
+                                                                                style: TextStyle(
+                                                                                  fontSize: 16,
+                                                                                  fontWeight: FontWeight.bold,
+                                                                                  color: Colors.black,
+                                                                                ),
                                                                               ),
                                                                             ),
-                                                                          ),
-                                                                          const SizedBox(
-                                                                              height: 10), // Espacio entre el texto y la lista
-                                                                          Container(
-                                                                            //color:Colors.green,
-                                                                            height:
-                                                                                320.00,
-                                                                            child: pedidosruta.length > 0
-                                                                                ? ListView.builder(
-                                                                                    itemCount: pedidosruta.length,
+                                                                            const SizedBox(height: 10), // Espacio entre el texto y la lista
+                                                                            Container(
+                                                                              //color:Colors.green,
+                                                                              height: 320.00,
+                                                                              child: pedidosruta.length > 0
+                                                                                  ? ListView.builder(
+                                                                                      itemCount: pedidosruta.length,
 
-                                                                                    /* distrito_de_pedido
+                                                                                      /* distrito_de_pedido
                                                                             .length*/
-                                                                                    itemBuilder: (BuildContext context, int index) {
-                                                                                      return Container(
-                                                                                        margin: const EdgeInsets.only(bottom: 16),
-                                                                                        decoration: BoxDecoration(
-                                                                                          color: Colors.white,
-                                                                                          borderRadius: BorderRadius.circular(30), // Borde redondeado
-                                                                                          border: Border.all(color: Colors.black, width: 1), // Borde de color
-                                                                                        ),
-                                                                                        child: ListTile(
-                                                                                          title: Column(
-                                                                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                                                                            children: [
-                                                                                              Text(
-                                                                                                "Pedido N°:${pedidosruta[index].id}",
-                                                                                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                                                                              ),
-                                                                                              Text("Ruta: ${pedidosruta[index].ruta_id}",
-                                                                                                  style: const TextStyle(
-                                                                                                    fontSize: 12,
-                                                                                                  )),
-                                                                                              Text("Nombre: ${pedidosruta[index].nombre_cliente}",
-                                                                                                  style: const TextStyle(
-                                                                                                    fontSize: 12,
-                                                                                                  )),
-                                                                                              Text("Apellidos: ${pedidosruta[index].apellidos_cliente}",
-                                                                                                  style: const TextStyle(
-                                                                                                    fontSize: 12,
-                                                                                                  )),
-                                                                                              Text(
-                                                                                                "Telefono:${pedidosruta[index].telefono_cliente}",
-                                                                                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                                                                              ),
-                                                                                              Text("Total: ${pedidosruta[index].total}",
-                                                                                                  style: const TextStyle(
-                                                                                                    fontSize: 12,
-                                                                                                  )),
-                                                                                              Text("Fecha: ${pedidosruta[index].fecha}",
-                                                                                                  style: const TextStyle(
-                                                                                                    fontSize: 12,
-                                                                                                  )),
-                                                                                              Text("Tipo: ${pedidosruta[index].tipo}",
-                                                                                                  style: const TextStyle(
-                                                                                                    fontSize: 12,
-                                                                                                  )),
-                                                                                              Text("Distrito: ${pedidosruta[index].distrito}",
-                                                                                                  style: const TextStyle(
-                                                                                                    fontSize: 12,
-                                                                                                  )),
-                                                                                              Text("Direccion: ${pedidosruta[index].direccion}",
-                                                                                                  style: const TextStyle(
-                                                                                                    fontSize: 12,
-                                                                                                  )),
-                                                                                            ],
-                                                                                          ), //Text(distrito_de_pedido[index].nombre),
-                                                                                          trailing: IconButton(
-                                                                                            icon: Icon(Icons.delete, color: Color.fromARGB(255, 95, 121, 153)),
-                                                                                            onPressed: () {
-                                                                                              setState(() {
-                                                                                                // Acción de borrado, por ejemplo, remover el distrito
-                                                                                                showDialog(
-                                                                                                    context: context,
-                                                                                                    builder: (BuildContext context) {
-                                                                                                      return AlertDialog(
-                                                                                                        title: const Text('¿Estás seguro que deseas revertir o eliminar?'),
-                                                                                                        //content: const Text('AlertDialog description'),
-                                                                                                        actions: [
-                                                                                                          Row(
-                                                                                                            mainAxisAlignment: MainAxisAlignment.center,
-                                                                                                            children: [
-                                                                                                              TextButton(
-                                                                                                                onPressed: () => Navigator.pop(context, 'Cancel'),
-                                                                                                                child: const Text('Cancelar'),
-                                                                                                              ),
-                                                                                                              TextButton(
-                                                                                                                onPressed: () async {
-                                                                                                                  await deleterevertir(pedidosruta[index].id);
-                                                                                                                  if (mensajedelete == 'Pedido revertido o eliminado') {
-                                                                                                                    showDialog(
-                                                                                                                        context: context,
-                                                                                                                        builder: (BuildContext context) {
-                                                                                                                          return AlertDialog(
-                                                                                                                            title: Row(
-                                                                                                                              children: [
-                                                                                                                                Text(
-                                                                                                                                  mensajedelete,
-                                                                                                                                  style: const TextStyle(fontWeight: FontWeight.w600),
-                                                                                                                                ),
-                                                                                                                                TextButton(
+                                                                                      itemBuilder: (BuildContext context, int index) {
+                                                                                        return Container(
+                                                                                          margin: const EdgeInsets.only(bottom: 16),
+                                                                                          decoration: BoxDecoration(
+                                                                                            color: Colors.white,
+                                                                                            borderRadius: BorderRadius.circular(30), // Borde redondeado
+                                                                                            border: Border.all(color: Colors.black, width: 1), // Borde de color
+                                                                                          ),
+                                                                                          child: ListTile(
+                                                                                            title: Column(
+                                                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                                                              children: [
+                                                                                                Text(
+                                                                                                  "Pedido N°:${pedidosruta[index].id}",
+                                                                                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                                                                                ),
+                                                                                                Text("Ruta: ${pedidosruta[index].ruta_id}",
+                                                                                                    style: const TextStyle(
+                                                                                                      fontSize: 12,
+                                                                                                    )),
+                                                                                                Text("Nombre: ${pedidosruta[index].nombre_cliente}",
+                                                                                                    style: const TextStyle(
+                                                                                                      fontSize: 12,
+                                                                                                    )),
+                                                                                                Text("Apellidos: ${pedidosruta[index].apellidos_cliente}",
+                                                                                                    style: const TextStyle(
+                                                                                                      fontSize: 12,
+                                                                                                    )),
+                                                                                                Text(
+                                                                                                  "Telefono:${pedidosruta[index].telefono_cliente}",
+                                                                                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                                                                                ),
+                                                                                                Text("Total: ${pedidosruta[index].total}",
+                                                                                                    style: const TextStyle(
+                                                                                                      fontSize: 12,
+                                                                                                    )),
+                                                                                                Text("Fecha: ${pedidosruta[index].fecha}",
+                                                                                                    style: const TextStyle(
+                                                                                                      fontSize: 12,
+                                                                                                    )),
+                                                                                                Text("Tipo: ${pedidosruta[index].tipo}",
+                                                                                                    style: const TextStyle(
+                                                                                                      fontSize: 12,
+                                                                                                    )),
+                                                                                                Text("Distrito: ${pedidosruta[index].distrito}",
+                                                                                                    style: const TextStyle(
+                                                                                                      fontSize: 12,
+                                                                                                    )),
+                                                                                                Text("Direccion: ${pedidosruta[index].direccion}",
+                                                                                                    style: const TextStyle(
+                                                                                                      fontSize: 12,
+                                                                                                    )),
+                                                                                              ],
+                                                                                            ), //Text(distrito_de_pedido[index].nombre),
+                                                                                            trailing: Column(
+                                                                                              mainAxisSize: MainAxisSize.min,
+                                                                                              mainAxisAlignment: MainAxisAlignment.center,
+                                                                                              //mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                                              children: [
+                                                                                                Flexible(
+                                                                                                  child: IconButton(
+                                                                                                    iconSize: 20.0,
+                                                                                                    icon: Icon(Icons.delete, color: Color.fromARGB(255, 95, 121, 153)),
+                                                                                                    onPressed: () {
+                                                                                                      showDialog(
+                                                                                                        context: context,
+                                                                                                        builder: (BuildContext context) {
+                                                                                                          return AlertDialog(
+                                                                                                            title: const Text('¿Estás seguro que deseas revertir o eliminar?'),
+                                                                                                            actions: [
+                                                                                                              Row(
+                                                                                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                                                                                children: [
+                                                                                                                  TextButton(
+                                                                                                                    onPressed: () => Navigator.pop(context, 'Cancel'),
+                                                                                                                    child: const Text('Cancelar'),
+                                                                                                                  ),
+                                                                                                                  TextButton(
+                                                                                                                    onPressed: () async {
+                                                                                                                      await deleterevertir(pedidosruta[index].id);
+                                                                                                                      if (mensajedelete == 'Pedido revertido o eliminado') {
+                                                                                                                        showDialog(
+                                                                                                                          context: context,
+                                                                                                                          builder: (BuildContext context) {
+                                                                                                                            return AlertDialog(
+                                                                                                                              title: Row(
+                                                                                                                                children: [
+                                                                                                                                  Text(
+                                                                                                                                    mensajedelete,
+                                                                                                                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                                                                                                                  ),
+                                                                                                                                  TextButton(
                                                                                                                                     onPressed: () {
                                                                                                                                       Navigator.pop(context);
                                                                                                                                       Navigator.pop(context);
-                                                                                                                                      // Navigator.pop(context);
                                                                                                                                       setState(() {});
                                                                                                                                     },
                                                                                                                                     child: const Text(
                                                                                                                                       "OK",
                                                                                                                                       style: TextStyle(color: Color.fromARGB(255, 39, 48, 129)),
-                                                                                                                                    ))
-                                                                                                                              ],
-                                                                                                                            ),
+                                                                                                                                    ),
+                                                                                                                                  )
+                                                                                                                                ],
+                                                                                                                              ),
+                                                                                                                            );
+                                                                                                                          },
+                                                                                                                        );
+                                                                                                                      }
+                                                                                                                    },
+                                                                                                                    child: const Text('Sí'),
+                                                                                                                  ),
+                                                                                                                ],
+                                                                                                              )
+                                                                                                            ],
+                                                                                                          );
+                                                                                                        },
+                                                                                                      );
+                                                                                                    },
+                                                                                                  ),
+                                                                                                ),
+                                                                                                //const SizedBox(height: 4.0),
+                                                                                                SizedBox(
+                                                                                                  height: 2.0,
+                                                                                                ),
+                                                                                                Flexible(
+                                                                                                  child: IconButton(
+                                                                                                    iconSize: 20.0,
+                                                                                                    icon: Icon(Icons.cancel, color: Color.fromARGB(255, 95, 121, 153)),
+                                                                                                    onPressed: () {
+                                                                                                      showDialog(
+                                                                                                        context: context,
+                                                                                                        builder: (BuildContext context) {
+                                                                                                          String motivo = '';
+                                                                                                          return AlertDialog(
+                                                                                                            title: Text('Cancelar Pedido'),
+                                                                                                            content: TextField(
+                                                                                                              onChanged: (value) {
+                                                                                                                motivo = value;
+                                                                                                              },
+                                                                                                              decoration: InputDecoration(hintText: "Ingrese el motivo de cancelación"),
+                                                                                                            ),
+                                                                                                            actions: <Widget>[
+                                                                                                              TextButton(
+                                                                                                                child: Text('Cancelar'),
+                                                                                                                onPressed: () {
+                                                                                                                  Navigator.of(context).pop();
+                                                                                                                },
+                                                                                                              ),
+                                                                                                              TextButton(
+                                                                                                                child: Text('Confirmar'),
+                                                                                                                onPressed: () async {
+                                                                                                                  if (motivo.isNotEmpty) {
+                                                                                                                    try {
+                                                                                                                      await cancelarPedido(pedidosruta[index].id, motivo);
+                                                                                                                      showDialog(
+                                                                                                                        context: context,
+                                                                                                                        builder: (BuildContext context) {
+                                                                                                                          return AlertDialog(
+                                                                                                                            title: Text('Éxito'),
+                                                                                                                            content: Text('Pedido cancelado exitosamente'),
+                                                                                                                            actions: [
+                                                                                                                              TextButton(
+                                                                                                                                child: Text('OK'),
+                                                                                                                                onPressed: () {
+                                                                                                                                  Navigator.of(context).pop();
+                                                                                                                                  Navigator.of(context).pop();
+                                                                                                                                  Navigator.of(context).pop();
+                                                                                                                                  setState(() {
+                                                                                                                                    getPedidos(); // Actualiza la lista de pedidos
+                                                                                                                                  });
+                                                                                                                                },
+                                                                                                                              ),
+                                                                                                                            ],
                                                                                                                           );
-                                                                                                                        });
+                                                                                                                        },
+                                                                                                                      );
+                                                                                                                    } catch (e) {
+                                                                                                                      showDialog(
+                                                                                                                        context: context,
+                                                                                                                        builder: (BuildContext context) {
+                                                                                                                          return AlertDialog(
+                                                                                                                            title: Text('Error'),
+                                                                                                                            content: Text('Error al cancelar el pedido: ${e.toString()}'),
+                                                                                                                            actions: [
+                                                                                                                              TextButton(
+                                                                                                                                child: Text('OK'),
+                                                                                                                                onPressed: () {
+                                                                                                                                  Navigator.of(context).pop(); // Cierra este AlertDialog
+                                                                                                                                  Navigator.of(context).pop(); // Cierra el diálogo anterior si aún está abierto
+                                                                                                                                },
+                                                                                                                              ),
+                                                                                                                            ],
+                                                                                                                          );
+                                                                                                                        },
+                                                                                                                      );
+                                                                                                                    }
+                                                                                                                  } else {
+                                                                                                                    showDialog(
+                                                                                                                      context: context,
+                                                                                                                      builder: (BuildContext context) {
+                                                                                                                        return AlertDialog(
+                                                                                                                          title: Text('Aviso'),
+                                                                                                                          content: Text('Por favor, ingrese un motivo'),
+                                                                                                                          actions: [
+                                                                                                                            TextButton(
+                                                                                                                              child: Text('OK'),
+                                                                                                                              onPressed: () {
+                                                                                                                                Navigator.of(context).pop(); // Cierra este AlertDialog
+                                                                                                                              },
+                                                                                                                            ),
+                                                                                                                          ],
+                                                                                                                        );
+                                                                                                                      },
+                                                                                                                    );
                                                                                                                   }
                                                                                                                 },
-                                                                                                                child: const Text('Si'),
                                                                                                               ),
                                                                                                             ],
-                                                                                                          )
-                                                                                                        ],
+                                                                                                          );
+                                                                                                        },
                                                                                                       );
-                                                                                                    });
-
-                                                                                                // distrito_de_pedido.removeAt(index);
-                                                                                              });
-                                                                                            },
+                                                                                                    },
+                                                                                                  ),
+                                                                                                ),
+                                                                                              ],
+                                                                                            ),
                                                                                           ),
+                                                                                        );
+                                                                                      },
+                                                                                    )
+                                                                                  : const Center(
+                                                                                      child: Text(
+                                                                                        "No hay pedidos en esta ruta",
+                                                                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                                                                      ),
+                                                                                    ),
+                                                                            ),
+                                                                          ],
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                  Center(
+                                                                    child: Row(
+                                                                      //crossAxisAlignment: CrossAxisAlignment.center,
+                                                                      mainAxisAlignment:
+                                                                          MainAxisAlignment
+                                                                              .center,
+                                                                      children: [
+                                                                        Container(
+                                                                          width:
+                                                                              100,
+                                                                          height:
+                                                                              100,
+                                                                          //color: Colors.amber,
+                                                                          child: ElevatedButton(
+                                                                              onPressed: () {
+                                                                                Navigator.pop(context);
+                                                                                setState(() {
+                                                                                  idPedidosSeleccionados = [];
+                                                                                });
+                                                                              },
+                                                                              style: ButtonStyle(elevation: WidgetStateProperty.all(5), backgroundColor: WidgetStateProperty.all(Colors.white)),
+                                                                              child: const Text(
+                                                                                "Cerrar",
+                                                                                style: TextStyle(fontSize: 13),
+                                                                              )),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                          width:
+                                                                              10,
+                                                                        ),
+                                                                        Container(
+                                                                          width:
+                                                                              100,
+                                                                          height:
+                                                                              100,
+                                                                          child: ElevatedButton(
+                                                                              onPressed: () async {
+                                                                                print("dentro de confirmar");
+                                                                                if (idPedidosSeleccionados.isNotEmpty) {
+                                                                                  print("entro al if");
+                                                                                  showDialog(
+                                                                                    context: context,
+                                                                                    builder: (BuildContext context) {
+                                                                                      return const AlertDialog(
+                                                                                        content: Row(
+                                                                                          children: [
+                                                                                            CircularProgressIndicator(
+                                                                                              backgroundColor: Colors.green,
+                                                                                            ),
+                                                                                            SizedBox(width: 20),
+                                                                                            Text("Agregando pedido..."),
+                                                                                          ],
                                                                                         ),
                                                                                       );
                                                                                     },
-                                                                                  )
-                                                                                : const Center(
-                                                                                    child: Text(
-                                                                                      "No hay pedidos en esta ruta",
-                                                                                      style: TextStyle(fontWeight: FontWeight.bold),
-                                                                                    ),
-                                                                                  ),
-                                                                          ),
-                                                                        ],
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                                Center(
-                                                                  child: Row(
-                                                                    //crossAxisAlignment: CrossAxisAlignment.center,
-                                                                    mainAxisAlignment:
-                                                                        MainAxisAlignment
-                                                                            .center,
-                                                                    children: [
-                                                                      Container(
-                                                                        width:
-                                                                            100,
-                                                                        height:
-                                                                            100,
-                                                                        //color: Colors.amber,
-                                                                        child: ElevatedButton(
-                                                                            onPressed: () {
-                                                                              Navigator.pop(context);
-                                                                              setState(() {
-                                                                                idPedidosSeleccionados = [];
-                                                                              });
-                                                                            },
-                                                                            style: ButtonStyle(elevation: WidgetStateProperty.all(5), backgroundColor: WidgetStateProperty.all(Colors.white)),
-                                                                            child: const Text(
-                                                                              "Cerrar",
-                                                                              style: TextStyle(fontSize: 13),
-                                                                            )),
-                                                                      ),
-                                                                      const SizedBox(
-                                                                        width:
-                                                                            10,
-                                                                      ),
-                                                                      Container(
-                                                                        width:
-                                                                            100,
-                                                                        height:
-                                                                            100,
-                                                                        child: ElevatedButton(
-                                                                            onPressed: () async {
-                                                                              print("dentro de confirmar");
-                                                                              if (idPedidosSeleccionados.isNotEmpty) {
-                                                                                print("entro al if");
-                                                                                showDialog(
-                                                                                  context: context,
-                                                                                  builder: (BuildContext context) {
-                                                                                    return const AlertDialog(
-                                                                                      content: Row(
-                                                                                        children: [
-                                                                                          CircularProgressIndicator(
-                                                                                            backgroundColor: Colors.green,
-                                                                                          ),
-                                                                                          SizedBox(width: 20),
-                                                                                          Text("Agregando pedido..."),
-                                                                                        ],
-                                                                                      ),
-                                                                                    );
-                                                                                  },
-                                                                                );
-                                                                                await updatePedidoRuta(rutasempleado[index].id, "en proceso");
-                                                                                Navigator.pop(context);
-                                                                              } else {
-                                                                                print("entro al else");
-                                                                                showDialog(
-                                                                                  context: context,
-                                                                                  builder: (BuildContext context) {
-                                                                                    return AlertDialog(
-                                                                                      backgroundColor: Color.fromARGB(255, 244, 219, 135),
-                                                                                      title: const Text("Advertencia"),
-                                                                                      content: const Text("Debes seleccionar al menos un pedido para agregarlo a la ruta."),
-                                                                                      actions: [
-                                                                                        TextButton(
-                                                                                            onPressed: () {
-                                                                                              Navigator.pop(context);
-                                                                                            },
-                                                                                            child: const Text("OK"))
-                                                                                      ],
-                                                                                    );
-                                                                                  },
-                                                                                );
-                                                                              }
+                                                                                  );
+                                                                                  await updatePedidoRuta(rutasempleado[index].id, "en proceso");
 
-                                                                              // print("id pedidos");
-                                                                              // print(idPedidosSeleccionados.length);
-                                                                              // idPedidosSeleccionados = [];
-                                                                            },
-                                                                            style: ButtonStyle(
-                                                                                elevation: WidgetStateProperty.all(4),
-                                                                                backgroundColor: WidgetStateProperty.all(
-                                                                                  const Color.fromARGB(255, 109, 105, 129),
-                                                                                )),
-                                                                            child: const Text(
-                                                                              "Confirmar",
-                                                                              style: TextStyle(fontSize: 11, color: Colors.white),
-                                                                            )),
-                                                                      )
-                                                                    ],
-                                                                  ),
-                                                                )
-                                                              ],
+                                                                                  setState(() {
+                                                                                    for (var i = 0; i < distrito_pedido.length; i++) {
+                                                                                      for (var j = 0; j < distrito_de_pedido.length; j++) {
+                                                                                        String nombredistrito = distrito_de_pedido[j];
+                                                                                        distrito_pedido[nombredistrito]?[i].seleccionado = false;
+                                                                                      }
+                                                                                    }
+                                                                                    //idPedidosSeleccionados.clear;
+
+                                                                                    getPedidos();
+                                                                                  });
+                                                                                  setState(() {
+                                                                                    idPedidosSeleccionados = [];
+                                                                                    distrito_pedido = {};
+                                                                                  });
+                                                                                  Navigator.pop(context);
+
+                                                                                  Navigator.pop(context);
+                                                                                } else {
+                                                                                  print("entro al else");
+                                                                                  showDialog(
+                                                                                    context: context,
+                                                                                    builder: (BuildContext context) {
+                                                                                      return AlertDialog(
+                                                                                        backgroundColor: Color.fromARGB(255, 244, 219, 135),
+                                                                                        title: const Text("Advertencia"),
+                                                                                        content: const Text("Debes seleccionar al menos un pedido para agregarlo a la ruta."),
+                                                                                        actions: [
+                                                                                          TextButton(
+                                                                                              onPressed: () {
+                                                                                                Navigator.pop(context);
+                                                                                              },
+                                                                                              child: const Text("OK"))
+                                                                                        ],
+                                                                                      );
+                                                                                    },
+                                                                                  );
+                                                                                }
+
+                                                                                // print("id pedidos");
+                                                                                // print(idPedidosSeleccionados.length);
+                                                                                // idPedidosSeleccionados = [];
+                                                                              },
+                                                                              style: ButtonStyle(
+                                                                                  elevation: WidgetStateProperty.all(4),
+                                                                                  backgroundColor: WidgetStateProperty.all(
+                                                                                    const Color.fromARGB(255, 109, 105, 129),
+                                                                                  )),
+                                                                              child: const Text(
+                                                                                "Confirmar",
+                                                                                style: TextStyle(fontSize: 11, color: Colors.white),
+                                                                              )),
+                                                                        )
+                                                                      ],
+                                                                    ),
+                                                                  )
+                                                                ],
+                                                              ),
                                                             ),
-                                                          ),
-                                                        );
+                                                          );
+                                                        });
                                                       });
                                                 },
                                                 icon: const Icon(

@@ -435,7 +435,7 @@ class _CrudState extends State<Crud> {
                             decoration: BoxDecoration(
                                 color: Colors.grey,
                                 borderRadius: BorderRadius.circular(20)),
-                            child:const Text(
+                            child: const Text(
                               "Creación de usuarios",
                               style:
                                   TextStyle(fontSize: 18, color: Colors.white),
@@ -462,7 +462,8 @@ class _CrudState extends State<Crud> {
                                 },
                                 style: ButtonStyle(
                                     backgroundColor: MaterialStateProperty.all(
-                                        (const Color.fromARGB(255, 0, 41, 75)))),
+                                        (const Color.fromARGB(
+                                            255, 0, 41, 75)))),
                                 child: const Text(
                                   "Cerrar Sesión",
                                   style: TextStyle(
@@ -493,8 +494,8 @@ class _CrudState extends State<Crud> {
                                 children: [
                                   TextFormField(
                                     controller: _nombre,
-                                    decoration:
-                                        const InputDecoration(labelText: 'Nombre'),
+                                    decoration: const InputDecoration(
+                                        labelText: 'Nombre'),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Por favor, ingrese un nombre';
@@ -504,8 +505,8 @@ class _CrudState extends State<Crud> {
                                   ),
                                   TextFormField(
                                     controller: _apellidos,
-                                    decoration:
-                                      const InputDecoration(labelText: 'Apellidos'),
+                                    decoration: const InputDecoration(
+                                        labelText: 'Apellidos'),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Por favor, ingrese un apellido';
@@ -516,7 +517,7 @@ class _CrudState extends State<Crud> {
                                   TextFormField(
                                     controller: _dni,
                                     decoration:
-                                       const InputDecoration(labelText: 'DNI'),
+                                        const InputDecoration(labelText: 'DNI'),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Por favor, ingrese un dni';
@@ -567,8 +568,8 @@ class _CrudState extends State<Crud> {
                                   ),
                                   TextFormField(
                                     controller: _usuario,
-                                    decoration:
-                                       const InputDecoration(labelText: 'Usuario'),
+                                    decoration: const InputDecoration(
+                                        labelText: 'Usuario'),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Por favor, ingrese un usuario';
@@ -578,7 +579,7 @@ class _CrudState extends State<Crud> {
                                   ),
                                   TextFormField(
                                     controller: _contrasena,
-                                    decoration:const InputDecoration(
+                                    decoration: const InputDecoration(
                                         labelText: 'Contraseña'),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
@@ -612,7 +613,7 @@ class _CrudState extends State<Crud> {
                                       color:
                                           const Color.fromARGB(255, 84, 83, 79),
                                       borderRadius: BorderRadius.circular(20)),
-                                  child:const Text(
+                                  child: const Text(
                                     "Creación Vehículos",
                                     style: TextStyle(
                                         color: Colors.white,

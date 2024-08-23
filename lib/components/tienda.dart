@@ -2133,6 +2133,8 @@ class _TiendaState extends State<Tienda> {
                             const SizedBox(
                               height: 20,
                             ),
+
+                            // MAPA DE BUSQUEDA
                             Container(
                                 padding: const EdgeInsets.all(10),
                                 width: 450,
@@ -2180,6 +2182,7 @@ class _TiendaState extends State<Tienda> {
                                     //print(pickedData.address.values);
                                   },
                                 )),
+
                             // BOTONES REGISTROS
                           ],
                         ),
