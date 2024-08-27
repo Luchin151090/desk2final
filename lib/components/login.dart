@@ -2,6 +2,8 @@ import 'package:desktop2/components/crud.dart';
 import 'package:desktop2/components/model/user_model.dart';
 import 'package:desktop2/components/inicio.dart';
 import 'package:desktop2/components/provider/user_provider.dart';
+import 'package:desktop2/components/vista0.dart';
+import 'package:desktop2/components/vistamedia.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
@@ -235,10 +237,10 @@ class _Login1State extends State<Login1> {
 
                       if (status == 200) {
                         if (rol == 2) {
-                          Navigator.push(
+                          Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => Menu(),
+                              builder: (context) => Vistamedia(),
                             ),
                           );
                         } else if (rol == 1) {

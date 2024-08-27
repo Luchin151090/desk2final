@@ -179,11 +179,13 @@ class _TiendaState extends State<Tienda> {
             promoID: null,
           );
         }).toList();
-        for (var i = 0; i < tempProductos.length; i++) {
-          listElementos.add(tempProductos[i]);
-          //print("-------LISTAAAPRO");
-          //print(listElementos);
-        }
+        setState(() {
+          for (var i = 0; i < tempProductos.length; i++) {
+            listElementos.add(tempProductos[i]);
+            //print("-------LISTAAAPRO");
+            //print(listElementos);
+          }
+        });
       }
     } catch (e) {
       // print('Error en la solicitud: $e');
@@ -208,9 +210,11 @@ class _TiendaState extends State<Tienda> {
               fecha_limite: mapa['fecha_limite'].toString(),
               foto: '$apiUrl/images/${mapa['foto']}');
         }).toList();
-        for (var i = 0; i < tempPromos.length; i++) {
-          listElementos.add(tempPromos[i]);
-        }
+        setState(() {
+          for (var i = 0; i < tempPromos.length; i++) {
+            listElementos.add(tempPromos[i]);
+          }
+        });
       }
     } catch (e) {
       //print('Error en la solicitud: $e');
@@ -454,13 +458,14 @@ class _TiendaState extends State<Tienda> {
               cantidadInt: mapa['cantidad'] * cantidadProm,
               promoID: mapa['promocion_id']);
         }).toList();
-
-        setState(() {
-          //    print("5.6) Productos  de Promo contabilizados");
-          //    print(tempProducto);
-          listFinalProductosSeleccionados.addAll(tempProducto);
-          //listProductos = tempProducto;
-        });
+        if (mounted) {
+          setState(() {
+            //    print("5.6) Productos  de Promo contabilizados");
+            //    print(tempProducto);
+            listFinalProductosSeleccionados.addAll(tempProducto);
+            //listProductos = tempProducto;
+          });
+        }
       }
     } catch (e) {
       //print('Error en la solicitud: $e');
@@ -674,1526 +679,1443 @@ class _TiendaState extends State<Tienda> {
 
     return Scaffold(
       //backgroundColor: Color.fromARGB(255, 191, 195, 199),
-      body: Container(
-        padding: const EdgeInsets.all(9),
-        height: MediaQuery.of(context).size.height,
-        width: MediaQuery.of(context).size.width,
-        color: const Color.fromARGB(255, 150, 151, 152),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: const Color.fromARGB(255, 46, 46, 46),
+        toolbarHeight: MediaQuery.of(context).size.height / 10.0,
+        title: Row(
           children: [
             Container(
-                margin: const EdgeInsets.only(left: 50),
-                child: Text(
-                  "Sistema de Pedido",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: MediaQuery.of(context).size.height / 35),
-                )),
-            const SizedBox(
-              height: 20,
+              width: MediaQuery.of(context).size.width / 30,
+              height: MediaQuery.of(context).size.width / 30,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('lib/imagenes/nuevito.png'),
+                ),
+              ),
             ),
+            const SizedBox(width: 10),
             Container(
-              //height: 1000,
-              // height: MediaQuery.of(context).size.height,
-              margin: const EdgeInsets.only(left: 20),
-              //color: Colors.blue,
-
-              child: Row(
+              child: Text(
+                "Crear pedido",
+                style: TextStyle(
+                  fontSize: MediaQuery.of(context).size.width / 85,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: Container(
+        //padding: const EdgeInsets.all(9),
+        height: MediaQuery.of(context).size.height,
+        width: MediaQuery.of(context).size.width,
+        color: Color.fromARGB(255, 67, 67, 67),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // formulario
+            Container(
+             // color: Colors.green,
+              width: MediaQuery.of(context).size.width / 5.2,
+              height: MediaQuery.of(context).size.height /
+                  1.1, // <= 800 ? 500 : 800,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // FORMULARIO
-
                   Container(
-                    //color: Colors.green,
-                    width: MediaQuery.of(context).size.width / 5.2,
-                    height: MediaQuery.of(context).size.height /
-                        1.1, // <= 800 ? 500 : 800,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 20),
-                          child: const Text(
-                            "Datos del Cliente",
-                            style: TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Container(
-                          height:
-                              MediaQuery.of(context).size.height / 1.3, //1.5,
-                          margin: const EdgeInsets.only(bottom: 0),
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 241, 241, 241),
-                              borderRadius: BorderRadius.circular(10)),
-                          child: SingleChildScrollView(
-                            child: Form(
-                                key: _formKey,
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(
-                                      height: 30,
-                                    ),
-                                    TextFormField(
-                                      controller: _nombres,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Nombres',
-                                        hintText: 'Ingrese sus nombres',
-                                        isDense: true,
-                                        labelStyle: TextStyle(
-                                          fontSize: 15.0,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color.fromARGB(255, 1, 55, 99),
-                                        ),
-                                        hintStyle: TextStyle(
-                                          fontSize: 13.0,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'El campo es obligatorio';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    const SizedBox(
-                                      height: 30,
-                                    ),
-                                    TextFormField(
-                                      controller: _apellidos,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Apellidos',
-                                        hintText: 'Ingrese sus apellidos',
-                                        isDense: true,
-                                        labelStyle: TextStyle(
-                                          fontSize: 15.0,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color.fromARGB(255, 1, 55, 99),
-                                        ),
-                                        hintStyle: TextStyle(
-                                          fontSize: 13.0,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'El campo es obligatorio';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    const SizedBox(
-                                      height: 30,
-                                    ),
-                                    TextFormField(
-                                      controller: _direccion,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Direccion',
-                                        hintText: 'Ingrese su direccion',
-                                        isDense: true,
-                                        labelStyle: TextStyle(
-                                          fontSize: 15.0,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color.fromARGB(255, 1, 55, 99),
-                                        ),
-                                        hintStyle: TextStyle(
-                                          fontSize: 13.0,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'El campo es obligatorio';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    const SizedBox(
-                                      height: 30,
-                                    ),
-                                    TextFormField(
-                                      controller: _telefono,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly
-                                      ], // Añade esta línea
-                                      //maxLength: 9,
-                                      decoration: const InputDecoration(
-                                          labelText: 'Teléfono',
-                                          hintText: 'Ingrese su teléfono',
-                                          isDense: true,
-                                          labelStyle: TextStyle(
-                                            fontSize: 15.0,
-                                            fontWeight: FontWeight.bold,
-                                            color:
-                                                Color.fromARGB(255, 1, 55, 99),
-                                          ),
-                                          hintStyle: TextStyle(
-                                            fontSize: 13.0,
-                                            color: Colors.grey,
-                                          )),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'El campo es obligatorio';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    const SizedBox(
-                                      height: 30,
-                                    ),
-                                    TextFormField(
-                                      controller: _email,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Email',
-                                        hintText: 'Ingrese su email',
-                                        isDense: true,
-                                        labelStyle: TextStyle(
-                                          fontSize: 15.0,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color.fromARGB(255, 1, 55, 99),
-                                        ),
-                                        hintStyle: TextStyle(
-                                          fontSize: 13.0,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                      height: 30,
-                                    ),
-                                    TextFormField(
-                                      controller: _distrito,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Distrito',
-                                        hintText: 'Ingrese su dirección',
-                                        isDense: true,
-                                        labelStyle: TextStyle(
-                                          fontSize: 15.0,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color.fromARGB(255, 1, 55, 99),
-                                        ),
-                                        hintStyle: TextStyle(
-                                          fontSize: 13.0,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'El campo es obligatorio';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-                                    const SizedBox(
-                                      height: 30,
-                                    ),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _latitud,
-                                            decoration: const InputDecoration(
-                                                labelText: 'Ubicación(Lat)',
-                                                hintText:
-                                                    'Ingrese su ubicación',
-                                                isDense: true,
-                                                labelStyle: TextStyle(
-                                                  fontSize: 15.0,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color.fromARGB(
-                                                      255, 1, 55, 99),
-                                                ),
-                                                hintStyle: TextStyle(
-                                                  fontSize: 13.0,
-                                                  color: Colors.grey,
-                                                )),
-                                            validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
-                                                return 'El campo es obligatorio';
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _longitud,
-                                            decoration: const InputDecoration(
-                                                labelText: 'Ubicación(Long)',
-                                                hintText:
-                                                    'Ingrese su ubicación',
-                                                isDense: true,
-                                                labelStyle: TextStyle(
-                                                  fontSize: 15.0,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color.fromARGB(
-                                                      255, 1, 55, 99),
-                                                ),
-                                                hintStyle: TextStyle(
-                                                  fontSize: 13.0,
-                                                  color: Colors.grey,
-                                                )),
-                                            validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
-                                                return 'El campo es obligatorio';
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(
-                                      height: 30,
-                                    ),
-                                    TextFormField(
-                                      controller: _ruc,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.digitsOnly
-                                      ], // Añade esta línea
-                                      maxLength: 11,
-                                      decoration: const InputDecoration(
-                                          labelText: 'RUC',
-                                          hintText: 'Ingrese su RUC',
-                                          isDense: true,
-                                          labelStyle: TextStyle(
-                                            fontSize: 15.0,
-                                            fontWeight: FontWeight.bold,
-                                            color:
-                                                Color.fromARGB(255, 1, 55, 99),
-                                          ),
-                                          hintStyle: TextStyle(
-                                            fontSize: 13.0,
-                                            color: Colors.grey,
-                                          )),
-                                    ),
-                                    const SizedBox(
-                                      height: 30,
-                                    ),
-                                    TextFormField(
-                                      readOnly: true,
-                                      controller:
-                                          _fechanacimiento, // Usa el controlador de texto
-                                      onTap: () async {
-                                        // Abre el selector de fechas cuando se hace clic en el campo
-                                        DateTime? fechaSeleccionada =
-                                            await showDatePicker(
-                                          context: context,
-                                          initialDate: DateTime.now(),
-                                          firstDate: DateTime(1970),
-                                          lastDate: DateTime(2101),
-                                        );
-
-                                        if (fechaSeleccionada != null) {
-                                          // Actualiza el valor del campo de texto con la fecha seleccionada
-                                          _fechanacimiento.text =
-                                              "${fechaSeleccionada.day}/${fechaSeleccionada.month}/${fechaSeleccionada.year}";
-                                        }
-                                      },
-                                      keyboardType: TextInputType.datetime,
-                                      style: const TextStyle(
-                                        //fontSize: largoActual * 0.024,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                      ),
-                                      decoration: const InputDecoration(
-                                        labelText: 'Fecha de Pedido',
-                                        // hintText: 'Ingrese sus apellidos',
-                                        isDense: true,
-                                        labelStyle: TextStyle(
-                                          // fontSize: largoActual * 0.02,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color.fromARGB(255, 1, 55, 99),
-                                        ),
-                                        hintStyle: TextStyle(
-                                          //  fontSize: largoActual * 0.018,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                      height: 30,
-                                    ),
-                                    DropdownButtonFormField<String>(
-                                      value: _estadoPedido,
-                                      onChanged: (String? newValue) {
-                                        setState(() {
-                                          _estadoPedido = newValue!;
-                                        });
-                                      },
-                                      decoration: const InputDecoration(
-                                        labelText: 'Estado del Pedido',
-                                        isDense: true,
-                                        labelStyle: TextStyle(
-                                          fontSize: 15.0,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color.fromARGB(255, 1, 55, 99),
-                                        ),
-                                      ),
-                                      items: <String>['pendiente', 'pagado']
-                                          .map<DropdownMenuItem<String>>(
-                                              (String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ],
-                                )),
-                          ),
-                        ),
-                      ],
+                    child: const Text(
+                      "Datos del Cliente",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
-
-                  const SizedBox(
-                    width: 20,
-                  ),
-
-                  // PRODUCTOS
-
                   Container(
-                    height: MediaQuery.of(context).size.height / 1.1,
-                    //color: Colors.yellow,
-                    width: MediaQuery.of(context).size.width / 2.5, // //420,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          child: const Text(
-                            "Productos y Promociones",
-                            style: TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(
-                          height: 0,
-                        ),
-                        Container(
-                          //margin: const EdgeInsets.only(top: 15, bottom: 15),
-                          child: const Text(
-                            "Tipo de Pedido",
-                            style: TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.w400),
-                          ),
-                        ),
-                        Container(
-                          height: 50,
-                          width: MediaQuery.of(context).size.width <= 1580
-                              ? 420
-                              : 500,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              color: Color.fromARGB(255, 255, 255, 255)),
-                          child: Center(
-                            child: DropdownButton<String>(
-                              value: tipo,
-                              borderRadius:
-                                  const BorderRadius.all(Radius.circular(20)),
-                              hint: const Text('Seleccionar Tipo de Pedido'),
-                              icon: const Icon(Icons.arrow_drop_down_circle),
-                              onChanged: (value) {
-                                setState(() {
-                                  tipo = value;
-                                });
-                              },
-                              items: dropdownItems,
-                            ),
-                          ),
-                        ),
-
-                        // LIST VIEW BUILDER
-                        Center(
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            height: MediaQuery.of(context).size.height / 1.5,
-                            width: MediaQuery.of(context).size.width / 2,
-                            decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                color: Color.fromARGB(255, 255, 255, 255)),
-                            child: listElementos.isNotEmpty
-                                ? ListView.builder(
-                                    scrollDirection: Axis.vertical,
-                                    itemCount: listElementos.length, //8
-                                    itemBuilder: ((context, index) {
-                                      dynamic elementoActual =
-                                          listElementos[index];
-                                      if (elementoActual is Producto) {
-                                        // Producto
-                                        Producto producto = elementoActual;
-
-                                        // CONTENEDOR PRINCIPAL
-
-                                        return Container(
-                                          margin:
-                                              const EdgeInsets.only(top: 10),
-                                          padding: const EdgeInsets.all(10),
-                                          height: 200,
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                            color: Color.fromARGB(
-                                                255, 169, 169, 169),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              // IMAGENES DE PRODUCTO
-                                              Container(
-                                                height: 150,
-                                                width: 150,
-                                                decoration: BoxDecoration(
-                                                    color: const Color.fromARGB(
-                                                        255, 255, 255, 255),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                    image: DecorationImage(
-                                                        image: NetworkImage(
-                                                            producto.foto))),
-                                              ),
-
-                                              // DESCRIPCIÓN DE PRODUCTO
-
-                                              Container(
-                                                  margin: const EdgeInsets.only(
-                                                      left: 20),
-                                                  height: 180,
-                                                  width: MediaQuery.of(context)
-                                                          .size
-                                                          .width /
-                                                      7.5,
-                                                  decoration: BoxDecoration(
-                                                    color: Color.fromARGB(
-                                                        255, 171, 171, 171),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                  ),
-                                                  child: Column(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center,
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      Text(
-                                                        "Presentación:${producto.nombre}",
-                                                        style: const TextStyle(
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                            color:
-                                                                Color.fromARGB(
-                                                                    255,
-                                                                    0,
-                                                                    0,
-                                                                    0)),
-                                                      ),
-                                                      Text(
-                                                        "${producto.descripcion}",
-                                                        style: const TextStyle(
-                                                            //fontWeight: FontWeight.bold,
-                                                            fontSize: 16,
-                                                            color:
-                                                                Color.fromARGB(
-                                                                    255,
-                                                                    0,
-                                                                    0,
-                                                                    0)),
-                                                      ),
-                                                      Text(
-                                                        "Precio: S/.${producto.precio}",
-                                                        style: const TextStyle(
-                                                            fontSize: 24,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            color:
-                                                                Color.fromARGB(
-                                                                    255,
-                                                                    255,
-                                                                    255,
-                                                                    255)),
-                                                      ),
-                                                    ],
-                                                  )),
-
-                                              // ENTRADAS NUMÉRICAS
-
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.all(15),
-                                                margin: const EdgeInsets.only(
-                                                    left: 20),
-                                                height: 180,
-                                                width: MediaQuery.of(context)
-                                                            .size
-                                                            .width <=
-                                                        2220
-                                                    ? 150
-                                                    : 250,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey,
-                                                  borderRadius:
-                                                      BorderRadius.circular(20),
-                                                ),
-                                                child: Column(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  children: [
-                                                    // CANTIDAD
-                                                    TextFormField(
-                                                      controller:
-                                                          producto.cantidad,
-                                                      keyboardType:
-                                                          const TextInputType
-                                                              .numberWithOptions(
-                                                              decimal: true),
-                                                      inputFormatters: [
-                                                        FilteringTextInputFormatter
-                                                            .allow(
-                                                                RegExp(r'^\d+'))
-                                                      ],
-                                                      decoration:
-                                                          InputDecoration(
-                                                        filled: true,
-                                                        fillColor: const Color
-                                                            .fromARGB(
-                                                            255,
-                                                            223,
-                                                            225,
-                                                            226), // Cambia este color según tus preferencias
-
-                                                        hintText: 'Cantidad',
-                                                        border:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                        ),
-                                                        hintStyle:
-                                                            const TextStyle(
-                                                                fontSize: 12),
-                                                      ),
-                                                      onChanged: (value) {
-                                                        /* print(
-                                                                "valor detectado: $value");
-                                                            print(
-                                                                'tipo ${value.runtimeType}');*/
-                                                        // SETEAR DE LA LISTA MIXTA(PROD Y PROMO)
-                                                        listElementos[index]
-                                                            .cantidad
-                                                            .text = value;
-
-                                                        if (value.isNotEmpty) {
-                                                          setState(() {
-                                                            listElementos[index]
-                                                                    .cantidadInt =
-                                                                int.parse(
-                                                                    value);
-                                                            listElementos[index]
-                                                                .monto = int
-                                                                    .parse(
-                                                                        value) *
-                                                                listElementos[
-                                                                        index]
-                                                                    .precio;
-                                                          });
-                                                        }
-                                                      },
-                                                      style: const TextStyle(
-                                                          fontSize: 12),
-                                                    ),
-
-                                                    // PRECIO
-
-                                                    TextFormField(
-                                                      controller:
-                                                          producto.descuento,
-                                                      keyboardType:
-                                                          const TextInputType
-                                                              .numberWithOptions(
-                                                              decimal: true),
-                                                      inputFormatters: [
-                                                        FilteringTextInputFormatter
-                                                            .allow(RegExp(
-                                                                r'^\d+\.?\d{0,2}')),
-                                                      ],
-                                                      decoration:
-                                                          InputDecoration(
-                                                        filled: true,
-                                                        fillColor: const Color
-                                                            .fromARGB(
-                                                            255,
-                                                            223,
-                                                            225,
-                                                            226), // Cambia este color según tus preferencias
-
-                                                        hintText:
-                                                            'S/. Descuento',
-                                                        border:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                        ),
-                                                        hintStyle:
-                                                            const TextStyle(
-                                                                fontSize: 12),
-                                                      ),
-                                                      onChanged: (value) {
-                                                        /*print(
-                                                                "0.1) descuento detectado: $value");*/
-                                                        // SETEAR DE LA LISTA MIXTA(PROD Y PROMO)
-                                                        listElementos[index]
-                                                            .descuento
-                                                            .text = value;
-                                                        if (value.isNotEmpty) {
-                                                          setState(() {
-                                                            listElementos[index]
-                                                                    .descuentoDouble =
-                                                                int.parse(value)
-                                                                    .toDouble();
-                                                            listElementos[index]
-                                                                .monto = listElementos[
-                                                                        index]
-                                                                    .precio *
-                                                                listElementos[
-                                                                        index]
-                                                                    .cantidadInt;
-                                                            /* print(
-                                                                    '0.2) este es el descuento: ${listElementos[index].descuentoDouble}');*/
-                                                          });
-                                                        } else {
-                                                          /*print(
-                                                                  '0.3) no hay descuento');*/
-                                                          setState(() {
-                                                            listElementos[index]
-                                                                    .descuentoDouble =
-                                                                0.00;
-                                                            listElementos[index]
-                                                                .monto = listElementos[
-                                                                        index]
-                                                                    .precio *
-                                                                listElementos[
-                                                                        index]
-                                                                    .cantidadInt;
-                                                            /*print(
-                                                                    '0.4) este es el monto sin descuento: ${listElementos[index].monto}');*/
-                                                          });
-                                                        }
-
-                                                        listElementos[index]
-                                                            .monto = listElementos[
-                                                                    index]
-                                                                .monto -
-                                                            listElementos[index]
-                                                                .descuentoDouble;
-                                                        /* print(
-                                                                '0.5) este es el monto con descuento: ${listElementos[index].monto}');*/
-                                                      },
-                                                      validator: (value) {
-                                                        if (value is String) {
-                                                          if (listElementos[
-                                                                  index]
-                                                              .cantidad
-                                                              .isNotEmpty) {
-                                                            if (int.parse(value)
-                                                                    .toDouble() >=
-                                                                (listElementos[
-                                                                            index]
-                                                                        .precio *
-                                                                    listElementos[
-                                                                            index]
-                                                                        .cantidadInt)) {
-                                                              return 'El descuento debe ser menor al monto: ${listElementos[index].precio * listElementos[index].cantidadInt}';
-                                                            } else {
-                                                              return null;
-                                                            }
-                                                          } else {
-                                                            return 'Primero debes poner la cantidad';
-                                                          }
-                                                        }
-                                                        return null;
-                                                      },
-                                                      style: const TextStyle(
-                                                          fontSize: 12),
-                                                    ),
-
-                                                    const SizedBox(
-                                                      height: 10,
-                                                    ),
-                                                    ElevatedButton(
-                                                        onPressed: producto
-                                                                    .descuento
-                                                                    .text
-                                                                    .isNotEmpty &&
-                                                                producto
-                                                                    .cantidad
-                                                                    .text
-                                                                    .isNotEmpty
-                                                            ? () {
-                                                                showModalBottomSheet(
-                                                                  context:
-                                                                      context,
-                                                                  builder:
-                                                                      (BuildContext
-                                                                          context) {
-                                                                    return StatefulBuilder(builder: (BuildContext
-                                                                            context,
-                                                                        StateSetter
-                                                                            setState) {
-                                                                      return Container(
-                                                                        height:
-                                                                            280,
-                                                                        width: MediaQuery.of(context)
-                                                                            .size
-                                                                            .width,
-                                                                        padding: const EdgeInsets
-                                                                            .all(
-                                                                            16.0),
-                                                                        child:
-                                                                            Column(
-                                                                          crossAxisAlignment:
-                                                                              CrossAxisAlignment.start,
-                                                                          mainAxisSize:
-                                                                              MainAxisSize.min,
-                                                                          children: [
-                                                                            const Text(
-                                                                              'Autorizado por:',
-                                                                              style: TextStyle(
-                                                                                color: Color.fromARGB(255, 3, 64, 113),
-                                                                                fontSize: 20,
-                                                                                fontWeight: FontWeight.bold,
-                                                                              ),
-                                                                            ),
-                                                                            const SizedBox(height: 10),
-                                                                            TextFormField(
-                                                                              controller: producto.nombreAutorizador,
-                                                                              style: const TextStyle(
-                                                                                fontSize: 15,
-                                                                                fontWeight: FontWeight.bold,
-                                                                                color: Color.fromARGB(255, 1, 41, 75),
-                                                                              ),
-                                                                              decoration: const InputDecoration(
-                                                                                filled: true,
-                                                                                fillColor: Colors.white,
-                                                                                labelText: "Nombre:",
-                                                                                labelStyle: TextStyle(
-                                                                                  color: Color.fromARGB(255, 0, 48, 87),
-                                                                                  fontSize: 13,
-                                                                                ),
-                                                                              ),
-                                                                              onChanged: (value) {
-                                                                                print('nombre detectado: $value');
-                                                                                print('tipo ${value.runtimeType}');
-                                                                                setState(() {
-                                                                                  listElementos[index].nombreAutorizador.text = value;
-                                                                                });
-                                                                              },
-                                                                            ),
-                                                                            TextFormField(
-                                                                              controller: producto.cargoAutorizador,
-                                                                              style: const TextStyle(
-                                                                                fontSize: 15,
-                                                                                fontWeight: FontWeight.bold,
-                                                                                color: Color.fromARGB(255, 1, 41, 75),
-                                                                              ),
-                                                                              decoration: const InputDecoration(
-                                                                                filled: true,
-                                                                                fillColor: Colors.white,
-                                                                                labelText: "Cargo:",
-                                                                                labelStyle: TextStyle(
-                                                                                  color: Color.fromARGB(255, 0, 48, 87),
-                                                                                  fontSize: 13,
-                                                                                ),
-                                                                              ),
-                                                                              onChanged: (value) {
-                                                                                //  print('cargo detectado: $value');
-                                                                                //  print('tipo ${value.runtimeType}');
-                                                                                setState(() {
-                                                                                  listElementos[index].cargoAutorizador.text = value;
-                                                                                });
-                                                                              },
-                                                                            ),
-                                                                            const SizedBox(height: 10),
-                                                                            ElevatedButton(
-                                                                              onPressed: producto.cargoAutorizador.text.isNotEmpty && producto.nombreAutorizador.text.isNotEmpty
-                                                                                  ? () {
-                                                                                      //  print("datos de observacion añadidos");
-                                                                                      setState(() {
-                                                                                        producto.observacion = "Descuento de S/.${producto.descuentoDouble} en ${producto.nombre} aprobado por ${producto.nombreAutorizador.text} - ${producto.cargoAutorizador.text}";
-                                                                                        // print(producto.observacion);
-                                                                                      });
-                                                                                      Navigator.pop(context);
-                                                                                    }
-                                                                                  : null,
-                                                                              style: ButtonStyle(backgroundColor: MaterialStateProperty.all(const Color.fromARGB(255, 35, 74, 106))),
-                                                                              child: const Row(
-                                                                                children: [
-                                                                                  Icon(
-                                                                                    Icons.account_box_outlined,
-                                                                                    color: Colors.blue,
-                                                                                    size: 25,
-                                                                                  ),
-                                                                                  Text(
-                                                                                    ' Confirmar',
-                                                                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400, color: Color.fromARGB(255, 77, 231, 82)),
-                                                                                  ),
-                                                                                ],
-                                                                              ),
-                                                                            ),
-                                                                          ],
-                                                                        ),
-                                                                      );
-                                                                    });
-                                                                  },
-                                                                );
-                                                              }
-                                                            : null,
-                                                        child:
-                                                            Text("Confirmar?"))
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      } else if (elementoActual is Promo) {
-                                        // Promos
-                                        Promo promo = elementoActual;
-
-                                        // CONTENEDOR PRINCIPAL
-                                        return Container(
-                                          margin:
-                                              const EdgeInsets.only(top: 10),
-                                          padding: const EdgeInsets.all(10),
-                                          height: 200,
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                            color: Color.fromARGB(
-                                                255, 163, 163, 163),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              // IMAGENES DE PRODUCTO
-                                              Container(
-                                                height: 150,
-                                                width: 150,
-                                                decoration: BoxDecoration(
-                                                    color: const Color.fromARGB(
-                                                        255, 255, 255, 255),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                    image: DecorationImage(
-                                                        image: NetworkImage(
-                                                            promo.foto))),
-                                              ),
-
-                                              // DESCRIPCIÓN DE PRODUCTO
-
-                                              Container(
-                                                  margin: const EdgeInsets.only(
-                                                      left: 20),
-                                                  height: 180,
-                                                  width: MediaQuery.of(context)
-                                                          .size
-                                                          .width /
-                                                      7.5,
-                                                  decoration: BoxDecoration(
-                                                    // color: Colors.grey,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                  ),
-                                                  child: Column(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center,
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      Text(
-                                                        "Presentación:${promo.nombre}",
-                                                        style: const TextStyle(
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                            color:
-                                                                Color.fromARGB(
-                                                                    255,
-                                                                    0,
-                                                                    0,
-                                                                    0)),
-                                                      ),
-                                                      Text(
-                                                        "${promo.descripcion}",
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        style: const TextStyle(
-                                                            fontSize: 12,
-                                                            color:
-                                                                Color.fromARGB(
-                                                                    255,
-                                                                    0,
-                                                                    0,
-                                                                    0)),
-                                                      ),
-                                                      Text(
-                                                        "Precio: S/.${promo.precio}",
-                                                        style: const TextStyle(
-                                                            fontSize: 24,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            color:
-                                                                Color.fromARGB(
-                                                                    255,
-                                                                    255,
-                                                                    255,
-                                                                    255)),
-                                                      ),
-                                                    ],
-                                                  )),
-
-                                              // ENTRADAS NUMÉRICAS
-
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.all(15),
-                                                margin: const EdgeInsets.only(
-                                                    left: 20),
-                                                height: 180,
-                                                width: MediaQuery.of(context)
-                                                            .size
-                                                            .width <
-                                                        1536
-                                                    ? 150
-                                                    : MediaQuery.of(context)
-                                                                .size
-                                                                .width >=
-                                                            1536
-                                                        ? 160
-                                                        : 0,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey,
-                                                  borderRadius:
-                                                      BorderRadius.circular(20),
-                                                ),
-                                                child: Column(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.start,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  children: [
-                                                    // CANTIDAD
-                                                    TextFormField(
-                                                      controller:
-                                                          promo.cantidad,
-                                                      keyboardType:
-                                                          TextInputType.number,
-                                                      inputFormatters: [
-                                                        FilteringTextInputFormatter
-                                                            .allow(RegExp(
-                                                                r'^\d+')),
-                                                      ],
-                                                      decoration:
-                                                          InputDecoration(
-                                                        filled: true,
-                                                        fillColor: const Color
-                                                            .fromARGB(
-                                                            255,
-                                                            223,
-                                                            225,
-                                                            226), // Cambia este color según tus preferencias
-
-                                                        hintText: 'Cantidad',
-                                                        border:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                        ),
-                                                        hintStyle:
-                                                            const TextStyle(
-                                                                fontSize: 12),
-                                                      ),
-                                                      onChanged: (value) {
-                                                        /* print(
-                                                                "valor detectado: $value");
-                                                            print(
-                                                                'tipo ${value.runtimeType}');*/
-                                                        // SETEAR DE LA LISTA MIXTA(PROD Y PROMO)
-                                                        listElementos[index]
-                                                            .cantidad
-                                                            .text = value;
-
-                                                        if (value.isNotEmpty) {
-                                                          //print(
-                                                          //    'tipo ${int.parse(value).runtimeType}');
-                                                          setState(() {
-                                                            listElementos[index]
-                                                                    .cantidadInt =
-                                                                int.parse(
-                                                                    value);
-                                                            listElementos[index]
-                                                                .monto = int
-                                                                    .parse(
-                                                                        value) *
-                                                                listElementos[
-                                                                        index]
-                                                                    .precio;
-                                                            //print(
-                                                            //    'este es el monto: ${listElementos[index].monto}');
-                                                          });
-                                                        }
-                                                      },
-                                                      style: const TextStyle(
-                                                          fontSize: 12),
-                                                    ),
-
-                                                    // PRECIO
-
-                                                    TextFormField(
-                                                      controller:
-                                                          promo.descuento,
-                                                      keyboardType:
-                                                          const TextInputType
-                                                              .numberWithOptions(
-                                                              decimal: true),
-                                                      inputFormatters: [
-                                                        FilteringTextInputFormatter
-                                                            .allow(RegExp(
-                                                                r'^\d+\.?\d{0,2}')),
-                                                      ],
-                                                      decoration:
-                                                          InputDecoration(
-                                                        filled: true,
-                                                        fillColor: const Color
-                                                            .fromARGB(
-                                                            255,
-                                                            223,
-                                                            225,
-                                                            226), // Cambia este color según tus preferencias
-
-                                                        hintText:
-                                                            'S/. Descuento',
-                                                        border:
-                                                            OutlineInputBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                        ),
-                                                        hintStyle:
-                                                            const TextStyle(
-                                                                fontSize: 12),
-                                                      ),
-                                                      onChanged: (value) {
-                                                        //print(
-                                                        //    "0.1) descuento detectado: $value");
-                                                        // SETEAR DE LA LISTA MIXTA(PROD Y PROMO)
-                                                        listElementos[index]
-                                                            .descuento
-                                                            .text = value;
-                                                        if (value.isNotEmpty) {
-                                                          setState(() {
-                                                            listElementos[index]
-                                                                    .descuentoDouble =
-                                                                int.parse(value)
-                                                                    .toDouble();
-                                                            listElementos[index]
-                                                                .monto = listElementos[
-                                                                        index]
-                                                                    .precio *
-                                                                listElementos[
-                                                                        index]
-                                                                    .cantidadInt;
-                                                            /*  print(
-                                                                    '0.2) este es el descuento: ${listElementos[index].descuentoDouble}');*/
-                                                          });
-                                                        } else {
-                                                          //print(
-                                                          //    '0.3) no hay descuento');
-                                                          setState(() {
-                                                            listElementos[index]
-                                                                    .descuentoDouble =
-                                                                0.00;
-                                                            listElementos[index]
-                                                                .monto = listElementos[
-                                                                        index]
-                                                                    .precio *
-                                                                listElementos[
-                                                                        index]
-                                                                    .cantidadInt;
-                                                            //print(
-                                                            //    '0.4) este es el monto sin descuento: ${listElementos[index].monto}');
-                                                          });
-                                                        }
-
-                                                        listElementos[index]
-                                                            .monto = listElementos[
-                                                                    index]
-                                                                .monto -
-                                                            listElementos[index]
-                                                                .descuentoDouble;
-                                                        // print(
-                                                        //     '0.5) este es el monto con descuento: ${listElementos[index].monto}');
-                                                      },
-                                                      validator: (value) {
-                                                        if (value is String) {
-                                                          if (listElementos[
-                                                                  index]
-                                                              .cantidad
-                                                              .isNotEmpty) {
-                                                            if (int.parse(value)
-                                                                    .toDouble() >=
-                                                                (listElementos[
-                                                                            index]
-                                                                        .precio *
-                                                                    listElementos[
-                                                                            index]
-                                                                        .cantidadInt)) {
-                                                              return 'El descuento debe ser menor al monto: ${listElementos[index].precio * listElementos[index].cantidadInt}';
-                                                            } else {
-                                                              return null;
-                                                            }
-                                                          } else {
-                                                            return 'Primero debes poner la cantidad';
-                                                          }
-                                                        }
-                                                        return null;
-                                                      },
-                                                      style: const TextStyle(
-                                                          fontSize: 12),
-                                                    ),
-
-                                                    const SizedBox(
-                                                      height: 10,
-                                                    ),
-                                                    ElevatedButton(
-                                                        onPressed:
-                                                            promo.descuentoDouble >
-                                                                        0 &&
-                                                                    promo.cantidadInt >
-                                                                        0
-                                                                ? () {
-                                                                    showModalBottomSheet(
-                                                                      context:
-                                                                          context,
-                                                                      builder:
-                                                                          (BuildContext
-                                                                              context) {
-                                                                        return StatefulBuilder(builder: (BuildContext
-                                                                                context,
-                                                                            StateSetter
-                                                                                setState) {
-                                                                          return Container(
-                                                                            height:
-                                                                                280,
-                                                                            width:
-                                                                                MediaQuery.of(context).size.width,
-                                                                            padding:
-                                                                                const EdgeInsets.all(16.0),
-                                                                            child:
-                                                                                Column(
-                                                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                                                              mainAxisSize: MainAxisSize.min,
-                                                                              children: [
-                                                                                const Text(
-                                                                                  'Autorizado por:',
-                                                                                  style: TextStyle(
-                                                                                    color: Color.fromARGB(255, 3, 64, 113),
-                                                                                    fontSize: 20,
-                                                                                    fontWeight: FontWeight.bold,
-                                                                                  ),
-                                                                                ),
-                                                                                const SizedBox(height: 10),
-                                                                                TextFormField(
-                                                                                  controller: promo.nombreAutorizador,
-                                                                                  style: const TextStyle(
-                                                                                    fontSize: 15,
-                                                                                    fontWeight: FontWeight.bold,
-                                                                                    color: Color.fromARGB(255, 1, 41, 75),
-                                                                                  ),
-                                                                                  decoration: const InputDecoration(
-                                                                                    filled: true,
-                                                                                    fillColor: Colors.white,
-                                                                                    labelText: "Nombre:",
-                                                                                    labelStyle: TextStyle(
-                                                                                      color: Color.fromARGB(255, 0, 48, 87),
-                                                                                      fontSize: 13,
-                                                                                    ),
-                                                                                  ),
-                                                                                  onChanged: (value) {
-                                                                                    setState(() {
-                                                                                      listElementos[index].nombreAutorizador.text = value;
-                                                                                    });
-                                                                                  },
-                                                                                ),
-                                                                                TextFormField(
-                                                                                  controller: promo.cargoAutorizador,
-                                                                                  style: const TextStyle(
-                                                                                    fontSize: 15,
-                                                                                    fontWeight: FontWeight.bold,
-                                                                                    color: Color.fromARGB(255, 1, 41, 75),
-                                                                                  ),
-                                                                                  decoration: const InputDecoration(
-                                                                                    filled: true,
-                                                                                    fillColor: Colors.white,
-                                                                                    labelText: "Cargo:",
-                                                                                    labelStyle: TextStyle(
-                                                                                      color: Color.fromARGB(255, 0, 48, 87),
-                                                                                      fontSize: 13,
-                                                                                    ),
-                                                                                  ),
-                                                                                  onChanged: (value) {
-                                                                                    setState(() {
-                                                                                      listElementos[index].cargoAutorizador.text = value;
-                                                                                    });
-                                                                                  },
-                                                                                ),
-                                                                                const SizedBox(height: 10),
-                                                                                ElevatedButton(
-                                                                                  style: ButtonStyle(backgroundColor: MaterialStateProperty.all(const Color.fromARGB(255, 1, 62, 111))),
-                                                                                  onPressed: promo.cargoAutorizador.text.isNotEmpty && promo.nombreAutorizador.text.isNotEmpty
-                                                                                      ? () {
-                                                                                          // print("datos de observacion añadidos");
-                                                                                          setState(() {
-                                                                                            promo.observacion = "Descuento aprobado por ${promo.nombreAutorizador.text} - ${promo.cargoAutorizador.text}";
-                                                                                            // print(promo.observacion);
-                                                                                          });
-                                                                                          Navigator.pop(context);
-                                                                                        }
-                                                                                      : null,
-                                                                                  child: const Row(
-                                                                                    children: [
-                                                                                      Icon(
-                                                                                        Icons.account_box_outlined,
-                                                                                        color: Colors.blue,
-                                                                                        size: 25,
-                                                                                      ),
-                                                                                      Text(
-                                                                                        ' Confirmar',
-                                                                                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400, color: Color.fromARGB(255, 77, 231, 82)),
-                                                                                      ),
-                                                                                    ],
-                                                                                  ),
-                                                                                ),
-                                                                              ],
-                                                                            ),
-                                                                          );
-                                                                        });
-                                                                      },
-                                                                    );
-                                                                  }
-                                                                : null,
-                                                        child:
-                                                            Text("Confirmar?"))
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      } else {
-                                        return Container(
-                                          child: Text("NO PRODUCTS"),
-                                        );
-                                      }
-
-                                      // Producto producto = listProducts[index];
-                                    }))
-                                : const Center(
-                                    child: Text("Cargando ..."),
+                    height: MediaQuery.of(context).size.height / 1.2, //1.5,
+                    margin: const EdgeInsets.only(bottom: 0),
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                        color: const Color.fromARGB(255, 241, 241, 241),
+                        borderRadius: BorderRadius.circular(10)),
+                    child: SingleChildScrollView(
+                      child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              TextFormField(
+                                controller: _nombres,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nombres',
+                                  hintText: 'Ingrese sus nombres',
+                                  isDense: true,
+                                  labelStyle: TextStyle(
+                                    fontSize: 15.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color.fromARGB(255, 1, 55, 99),
                                   ),
-                          ),
-                        ),
-                      ],
+                                  hintStyle: TextStyle(
+                                    fontSize: 13.0,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'El campo es obligatorio';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                              TextFormField(
+                                controller: _apellidos,
+                                decoration: const InputDecoration(
+                                  labelText: 'Apellidos',
+                                  hintText: 'Ingrese sus apellidos',
+                                  isDense: true,
+                                  labelStyle: TextStyle(
+                                    fontSize: 15.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color.fromARGB(255, 1, 55, 99),
+                                  ),
+                                  hintStyle: TextStyle(
+                                    fontSize: 13.0,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'El campo es obligatorio';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                              TextFormField(
+                                controller: _direccion,
+                                decoration: const InputDecoration(
+                                  labelText: 'Direccion',
+                                  hintText: 'Ingrese su direccion',
+                                  isDense: true,
+                                  labelStyle: TextStyle(
+                                    fontSize: 15.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color.fromARGB(255, 1, 55, 99),
+                                  ),
+                                  hintStyle: TextStyle(
+                                    fontSize: 13.0,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'El campo es obligatorio';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                              TextFormField(
+                                controller: _telefono,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly
+                                ], // Añade esta línea
+                                //maxLength: 9,
+                                decoration: const InputDecoration(
+                                    labelText: 'Teléfono',
+                                    hintText: 'Ingrese su teléfono',
+                                    isDense: true,
+                                    labelStyle: TextStyle(
+                                      fontSize: 15.0,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color.fromARGB(255, 1, 55, 99),
+                                    ),
+                                    hintStyle: TextStyle(
+                                      fontSize: 13.0,
+                                      color: Colors.grey,
+                                    )),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'El campo es obligatorio';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                              /*TextFormField(
+                                controller: _email,
+                                decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  hintText: 'Ingrese su email',
+                                  isDense: true,
+                                  labelStyle: TextStyle(
+                                    fontSize: 15.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color.fromARGB(255, 1, 55, 99),
+                                  ),
+                                  hintStyle: TextStyle(
+                                    fontSize: 13.0,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),*/
+
+                              TextFormField(
+                                controller: _distrito,
+                                decoration: const InputDecoration(
+                                  labelText: 'Distrito',
+                                  hintText: 'Ingrese su dirección',
+                                  isDense: true,
+                                  labelStyle: TextStyle(
+                                    fontSize: 15.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color.fromARGB(255, 1, 55, 99),
+                                  ),
+                                  hintStyle: TextStyle(
+                                    fontSize: 13.0,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'El campo es obligatorio';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _latitud,
+                                      decoration: const InputDecoration(
+                                          labelText: 'Ubicación(Lat)',
+                                          hintText: 'Ingrese su ubicación',
+                                          isDense: true,
+                                          labelStyle: TextStyle(
+                                            fontSize: 15.0,
+                                            fontWeight: FontWeight.bold,
+                                            color:
+                                                Color.fromARGB(255, 1, 55, 99),
+                                          ),
+                                          hintStyle: TextStyle(
+                                            fontSize: 13.0,
+                                            color: Colors.grey,
+                                          )),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'El campo es obligatorio';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _longitud,
+                                      decoration: const InputDecoration(
+                                          labelText: 'Ubicación(Long)',
+                                          hintText: 'Ingrese su ubicación',
+                                          isDense: true,
+                                          labelStyle: TextStyle(
+                                            fontSize: 15.0,
+                                            fontWeight: FontWeight.bold,
+                                            color:
+                                                Color.fromARGB(255, 1, 55, 99),
+                                          ),
+                                          hintStyle: TextStyle(
+                                            fontSize: 13.0,
+                                            color: Colors.grey,
+                                          )),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'El campo es obligatorio';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                              TextFormField(
+                                controller: _ruc,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly
+                                ], // Añade esta línea
+                                maxLength: 11,
+                                decoration: const InputDecoration(
+                                    labelText: 'RUC',
+                                    hintText: 'Ingrese su RUC',
+                                    isDense: true,
+                                    labelStyle: TextStyle(
+                                      fontSize: 15.0,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color.fromARGB(255, 1, 55, 99),
+                                    ),
+                                    hintStyle: TextStyle(
+                                      fontSize: 13.0,
+                                      color: Colors.grey,
+                                    )),
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                              TextFormField(
+                                readOnly: true,
+                                controller:
+                                    _fechanacimiento, // Usa el controlador de texto
+                                onTap: () async {
+                                  // Abre el selector de fechas cuando se hace clic en el campo
+                                  DateTime? fechaSeleccionada =
+                                      await showDatePicker(
+                                    context: context,
+                                    initialDate: DateTime.now(),
+                                    firstDate: DateTime(1970),
+                                    lastDate: DateTime(2101),
+                                  );
+
+                                  if (fechaSeleccionada != null) {
+                                    // Actualiza el valor del campo de texto con la fecha seleccionada
+                                    _fechanacimiento.text =
+                                        "${fechaSeleccionada.day}/${fechaSeleccionada.month}/${fechaSeleccionada.year}";
+                                  }
+                                },
+                                keyboardType: TextInputType.datetime,
+                                style: const TextStyle(
+                                  //fontSize: largoActual * 0.024,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                                decoration: const InputDecoration(
+                                  labelText: 'Fecha de Pedido',
+                                  // hintText: 'Ingrese sus apellidos',
+                                  isDense: true,
+                                  labelStyle: TextStyle(
+                                    // fontSize: largoActual * 0.02,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color.fromARGB(255, 1, 55, 99),
+                                  ),
+                                  hintStyle: TextStyle(
+                                    //  fontSize: largoActual * 0.018,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(
+                                height: 20,
+                              ),
+                              DropdownButtonFormField<String>(
+                                value: _estadoPedido,
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _estadoPedido = newValue!;
+                                  });
+                                },
+                                decoration: const InputDecoration(
+                                  labelText: 'Estado del Pedido',
+                                  isDense: true,
+                                  labelStyle: TextStyle(
+                                    fontSize: 15.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color.fromARGB(255, 1, 55, 99),
+                                  ),
+                                ),
+                                items: <String>[
+                                  'pendiente',
+                                  'pagado'
+                                ].map<DropdownMenuItem<String>>((String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(value),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          )),
                     ),
-                  ),
-
-                  const SizedBox(
-                    width: 10,
-                  ),
-
-                  // UBICACIÓN
-
-                  Column(
-                    children: [
-                      Container(
-                        // color: Colors.red,
-                        height: MediaQuery.of(context).size.height / 1.1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Container(
-                                child: ElevatedButton(
-                              onPressed: () async {
-                                if (_formKey.currentState!.validate()) {
-                                  await calculoDeSeleccionadosYMontos();
-                                  showDialog<String>(
-                                      context: context,
-                                      builder: (BuildContext context) =>
-                                          AlertDialog(
-                                            title: const Text(
-                                                'Vas a registrar el pedido'),
-                                            content:
-                                                const Text('¿Estas segur@?'),
-                                            actions: <Widget>[
-                                              ElevatedButton(
-                                                onPressed: () {
-                                                  pedidoCancelado();
-                                                  Navigator.pop(
-                                                      context, 'Cancelar');
-                                                },
-                                                child: const Text('Cancelar'),
-                                              ),
-                                              ElevatedButton(
-                                                onPressed:
-                                                    listFinalProductosSeleccionados
-                                                                .isNotEmpty &&
-                                                            montoTotalPedido >=
-                                                                montoMinimo
-                                                        ? () async {
-                                                            showDialog(
-                                                              context: context,
-                                                              builder:
-                                                                  (BuildContext
-                                                                      context) {
-                                                                return const AlertDialog(
-                                                                  content: Row(
-                                                                    children: [
-                                                                      CircularProgressIndicator(
-                                                                        backgroundColor:
-                                                                            Colors.green,
-                                                                      ),
-                                                                      SizedBox(
-                                                                          width:
-                                                                              20),
-                                                                      Text(
-                                                                          "Cargando..."),
-                                                                    ],
-                                                                  ),
-                                                                );
-                                                              },
-                                                            );
-                                                            /* print(
-                                                                    '1) Se presiona el botón de registar');*/
-                                                            await crearClienteNRmPedidoyDetallePedido(
-                                                                userProvider
-                                                                    .user?.id,
-                                                                tipo);
-                                                            Navigator.pop(
-                                                                context);
-                                                          }
-                                                        : null,
-                                                child: const Text('SI'),
-                                              ),
-                                            ],
-                                          ));
-                                }
-                              },
-                              style: ButtonStyle(
-                                  backgroundColor: MaterialStateProperty.all(
-                                      const Color.fromARGB(255, 35, 74, 106))),
-                              child: const Text(
-                                'Registrar Pedido',
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 15),
-                              ),
-                            )),
-                            const SizedBox(
-                              height: 20,
-                            ),
-                            Container(
-                              ///margin: const EdgeInsets.only(bottom: 20),
-                              child: const Text(
-                                "Ubicación",
-                                style: TextStyle(
-                                    fontSize: 20, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 20,
-                            ),
-
-                            // MAPA DE BUSQUEDA
-                            Container(
-                                padding: const EdgeInsets.all(10),
-                                width: 450,
-                                height:
-                                    MediaQuery.of(context).size.height / 1.35,
-                                decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    color: const Color.fromARGB(
-                                        255, 255, 255, 255)),
-                                // padding: const EdgeInsets.all(9),
-
-                                //padding: const EdgeInsets.all(20),
-                                child: OpenStreetMapSearchAndPick(
-                                  buttonTextStyle: TextStyle(fontSize: 12),
-                                  buttonColor:
-                                      const Color.fromARGB(255, 40, 69, 92),
-                                  buttonText: 'Obtener coordenadas',
-                                  onPicked: (pickedData) {
-                                    setState(() {
-                                      //direccion = pickedData.addressName;
-                                      String road =
-                                          pickedData.address['road'] ?? '';
-                                      String neighbourhood =
-                                          pickedData.address['neighbourhood'] ??
-                                              '';
-                                      String city =
-                                          pickedData.address['city'] ?? '';
-                                      var latitude =
-                                          pickedData.latLong.latitude;
-                                      var longitude =
-                                          pickedData.latLong.longitude;
-
-                                      _direccion.text = '$road $neighbourhood';
-                                      _distrito.text = '$city';
-                                      _latitud.text = '$latitude';
-                                      _longitud.text = '$longitude';
-                                    });
-                                    //print(pickedData.latLong.latitude);
-                                    //print(pickedData.latLong.longitude);
-                                    //print(pickedData.address);
-                                    //print(pickedData.addressName);
-                                    //print("-----------------");
-                                    //print(pickedData.address['city']);
-                                    //print("---OBJETO DIRECCIÓN---");
-                                    //print(pickedData.address.values);
-                                  },
-                                )),
-
-                            // BOTONES REGISTROS
-                          ],
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
             ),
 
-            /**/
+            // productos
+            Container(
+              height: MediaQuery.of(context).size.height,
+              //color: Colors.yellow,
+              width: MediaQuery.of(context).size.width / 2.5, // //420,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Container(
+                    child: const Text(
+                      "Productos y Promociones",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 0,
+                  ),
+
+                  Container(
+                    height: 50,
+                    width:
+                        MediaQuery.of(context).size.width <= 1580 ? 420 : 500,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: Color.fromARGB(255, 255, 255, 255)),
+                    child: Center(
+                      child: DropdownButton<String>(
+                        value: tipo,
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(20)),
+                        hint: const Text('Seleccionar Tipo de Pedido'),
+                        icon: const Icon(Icons.arrow_drop_down_circle),
+                        onChanged: (value) {
+                          setState(() {
+                            tipo = value;
+                          });
+                        },
+                        items: dropdownItems,
+                      ),
+                    ),
+                  ),
+
+                  // LIST VIEW BUILDER
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    height: MediaQuery.of(context).size.height / 1.35,
+                    width: MediaQuery.of(context).size.width / 2,
+                    decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: Color.fromARGB(255, 255, 255, 255)),
+                    child: listElementos.isNotEmpty
+                        ? ListView.builder(
+                            scrollDirection: Axis.vertical,
+                            itemCount: listElementos.length, //8
+                            itemBuilder: ((context, index) {
+                              dynamic elementoActual = listElementos[index];
+                              if (elementoActual is Producto) {
+                                // Producto
+                                Producto producto = elementoActual;
+
+                                // CONTENEDOR PRINCIPAL
+
+                                return Container(
+                                  margin: const EdgeInsets.only(top: 10),
+                                  padding: const EdgeInsets.all(10),
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    color: Color.fromARGB(255, 169, 169, 169),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // IMAGENES DE PRODUCTO
+                                      Container(
+                                        height: 150,
+                                        width: 150,
+                                        decoration: BoxDecoration(
+                                            color: const Color.fromARGB(
+                                                255, 255, 255, 255),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            image: DecorationImage(
+                                                image: NetworkImage(
+                                                    producto.foto))),
+                                      ),
+
+                                      // DESCRIPCIÓN DE PRODUCTO
+
+                                      Container(
+                                          margin:
+                                              const EdgeInsets.only(left: 20),
+                                          height: 180,
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width /
+                                              7.5,
+                                          decoration: BoxDecoration(
+                                            color: Color.fromARGB(
+                                                255, 171, 171, 171),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                "Presentación:${producto.nombre}",
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Color.fromARGB(
+                                                        255, 0, 0, 0)),
+                                              ),
+                                              Text(
+                                                "${producto.descripcion}",
+                                                style: const TextStyle(
+                                                    //fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
+                                                    color: Color.fromARGB(
+                                                        255, 0, 0, 0)),
+                                              ),
+                                              Text(
+                                                "Precio: S/.${producto.precio}",
+                                                style: const TextStyle(
+                                                    fontSize: 24,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color.fromARGB(
+                                                        255, 255, 255, 255)),
+                                              ),
+                                            ],
+                                          )),
+
+                                      // ENTRADAS NUMÉRICAS
+
+                                      Container(
+                                        padding: const EdgeInsets.all(15),
+                                        margin: const EdgeInsets.only(left: 20),
+                                        height: 180,
+                                        width:
+                                            MediaQuery.of(context).size.width <=
+                                                    2220
+                                                ? 150
+                                                : 250,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            // CANTIDAD
+                                            TextFormField(
+                                              controller: producto.cantidad,
+                                              keyboardType: const TextInputType
+                                                  .numberWithOptions(
+                                                  decimal: true),
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter
+                                                    .allow(RegExp(r'^\d+'))
+                                              ],
+                                              decoration: InputDecoration(
+                                                filled: true,
+                                                fillColor: const Color.fromARGB(
+                                                    255,
+                                                    223,
+                                                    225,
+                                                    226), // Cambia este color según tus preferencias
+
+                                                hintText: 'Cantidad',
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                hintStyle: const TextStyle(
+                                                    fontSize: 12),
+                                              ),
+                                              onChanged: (value) {
+                                                /* print(
+                                                                "valor detectado: $value");
+                                                            print(
+                                                                'tipo ${value.runtimeType}');*/
+                                                // SETEAR DE LA LISTA MIXTA(PROD Y PROMO)
+                                                listElementos[index]
+                                                    .cantidad
+                                                    .text = value;
+
+                                                if (value.isNotEmpty) {
+                                                  setState(() {
+                                                    listElementos[index]
+                                                            .cantidadInt =
+                                                        int.parse(value);
+                                                    listElementos[index].monto =
+                                                        int.parse(value) *
+                                                            listElementos[index]
+                                                                .precio;
+                                                  });
+                                                }
+                                              },
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                            ),
+
+                                            // PRECIO
+
+                                            TextFormField(
+                                              controller: producto.descuento,
+                                              keyboardType: const TextInputType
+                                                  .numberWithOptions(
+                                                  decimal: true),
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter
+                                                    .allow(RegExp(
+                                                        r'^\d+\.?\d{0,2}')),
+                                              ],
+                                              decoration: InputDecoration(
+                                                filled: true,
+                                                fillColor: const Color.fromARGB(
+                                                    255,
+                                                    223,
+                                                    225,
+                                                    226), // Cambia este color según tus preferencias
+
+                                                hintText: 'S/. Descuento',
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                hintStyle: const TextStyle(
+                                                    fontSize: 12),
+                                              ),
+                                              onChanged: (value) {
+                                                /*print(
+                                                                "0.1) descuento detectado: $value");*/
+                                                // SETEAR DE LA LISTA MIXTA(PROD Y PROMO)
+                                                listElementos[index]
+                                                    .descuento
+                                                    .text = value;
+                                                if (value.isNotEmpty) {
+                                                  setState(() {
+                                                    listElementos[index]
+                                                            .descuentoDouble =
+                                                        int.parse(value)
+                                                            .toDouble();
+                                                    listElementos[index].monto =
+                                                        listElementos[index]
+                                                                .precio *
+                                                            listElementos[index]
+                                                                .cantidadInt;
+                                                    /* print(
+                                                                    '0.2) este es el descuento: ${listElementos[index].descuentoDouble}');*/
+                                                  });
+                                                } else {
+                                                  /*print(
+                                                                  '0.3) no hay descuento');*/
+                                                  setState(() {
+                                                    listElementos[index]
+                                                        .descuentoDouble = 0.00;
+                                                    listElementos[index].monto =
+                                                        listElementos[index]
+                                                                .precio *
+                                                            listElementos[index]
+                                                                .cantidadInt;
+                                                    /*print(
+                                                                    '0.4) este es el monto sin descuento: ${listElementos[index].monto}');*/
+                                                  });
+                                                }
+
+                                                listElementos[index].monto =
+                                                    listElementos[index].monto -
+                                                        listElementos[index]
+                                                            .descuentoDouble;
+                                                /* print(
+                                                                '0.5) este es el monto con descuento: ${listElementos[index].monto}');*/
+                                              },
+                                              validator: (value) {
+                                                if (value is String) {
+                                                  if (listElementos[index]
+                                                      .cantidad
+                                                      .isNotEmpty) {
+                                                    if (int.parse(value)
+                                                            .toDouble() >=
+                                                        (listElementos[index]
+                                                                .precio *
+                                                            listElementos[index]
+                                                                .cantidadInt)) {
+                                                      return 'El descuento debe ser menor al monto: ${listElementos[index].precio * listElementos[index].cantidadInt}';
+                                                    } else {
+                                                      return null;
+                                                    }
+                                                  } else {
+                                                    return 'Primero debes poner la cantidad';
+                                                  }
+                                                }
+                                                return null;
+                                              },
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                            ),
+
+                                            const SizedBox(
+                                              height: 10,
+                                            ),
+                                            ElevatedButton(
+                                                onPressed:
+                                                    producto.descuento.text
+                                                                .isNotEmpty &&
+                                                            producto.cantidad
+                                                                .text.isNotEmpty
+                                                        ? () {
+                                                            showModalBottomSheet(
+                                                              context: context,
+                                                              builder:
+                                                                  (BuildContext
+                                                                      context) {
+                                                                return StatefulBuilder(builder:
+                                                                    (BuildContext
+                                                                            context,
+                                                                        StateSetter
+                                                                            setState) {
+                                                                  return Container(
+                                                                    height: 280,
+                                                                    width: MediaQuery.of(
+                                                                            context)
+                                                                        .size
+                                                                        .width,
+                                                                    padding:
+                                                                        const EdgeInsets
+                                                                            .all(
+                                                                            16.0),
+                                                                    child:
+                                                                        Column(
+                                                                      crossAxisAlignment:
+                                                                          CrossAxisAlignment
+                                                                              .start,
+                                                                      mainAxisSize:
+                                                                          MainAxisSize
+                                                                              .min,
+                                                                      children: [
+                                                                        const Text(
+                                                                          'Autorizado por:',
+                                                                          style:
+                                                                              TextStyle(
+                                                                            color: Color.fromARGB(
+                                                                                255,
+                                                                                3,
+                                                                                64,
+                                                                                113),
+                                                                            fontSize:
+                                                                                20,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                          ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            height:
+                                                                                10),
+                                                                        TextFormField(
+                                                                          controller:
+                                                                              producto.nombreAutorizador,
+                                                                          style:
+                                                                              const TextStyle(
+                                                                            fontSize:
+                                                                                15,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                            color: Color.fromARGB(
+                                                                                255,
+                                                                                1,
+                                                                                41,
+                                                                                75),
+                                                                          ),
+                                                                          decoration:
+                                                                              const InputDecoration(
+                                                                            filled:
+                                                                                true,
+                                                                            fillColor:
+                                                                                Colors.white,
+                                                                            labelText:
+                                                                                "Nombre:",
+                                                                            labelStyle:
+                                                                                TextStyle(
+                                                                              color: Color.fromARGB(255, 0, 48, 87),
+                                                                              fontSize: 13,
+                                                                            ),
+                                                                          ),
+                                                                          onChanged:
+                                                                              (value) {
+                                                                            print('nombre detectado: $value');
+                                                                            print('tipo ${value.runtimeType}');
+                                                                            setState(() {
+                                                                              listElementos[index].nombreAutorizador.text = value;
+                                                                            });
+                                                                          },
+                                                                        ),
+                                                                        TextFormField(
+                                                                          controller:
+                                                                              producto.cargoAutorizador,
+                                                                          style:
+                                                                              const TextStyle(
+                                                                            fontSize:
+                                                                                15,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                            color: Color.fromARGB(
+                                                                                255,
+                                                                                1,
+                                                                                41,
+                                                                                75),
+                                                                          ),
+                                                                          decoration:
+                                                                              const InputDecoration(
+                                                                            filled:
+                                                                                true,
+                                                                            fillColor:
+                                                                                Colors.white,
+                                                                            labelText:
+                                                                                "Cargo:",
+                                                                            labelStyle:
+                                                                                TextStyle(
+                                                                              color: Color.fromARGB(255, 0, 48, 87),
+                                                                              fontSize: 13,
+                                                                            ),
+                                                                          ),
+                                                                          onChanged:
+                                                                              (value) {
+                                                                            //  print('cargo detectado: $value');
+                                                                            //  print('tipo ${value.runtimeType}');
+                                                                            setState(() {
+                                                                              listElementos[index].cargoAutorizador.text = value;
+                                                                            });
+                                                                          },
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            height:
+                                                                                10),
+                                                                        ElevatedButton(
+                                                                          onPressed: producto.cargoAutorizador.text.isNotEmpty && producto.nombreAutorizador.text.isNotEmpty
+                                                                              ? () {
+                                                                                  //  print("datos de observacion añadidos");
+                                                                                  setState(() {
+                                                                                    producto.observacion = "Descuento de S/.${producto.descuentoDouble} en ${producto.nombre} aprobado por ${producto.nombreAutorizador.text} - ${producto.cargoAutorizador.text}";
+                                                                                    // print(producto.observacion);
+                                                                                  });
+                                                                                  Navigator.pop(context);
+                                                                                }
+                                                                              : null,
+                                                                          style:
+                                                                              ButtonStyle(backgroundColor: MaterialStateProperty.all(const Color.fromARGB(255, 35, 74, 106))),
+                                                                          child:
+                                                                              const Row(
+                                                                            children: [
+                                                                              Icon(
+                                                                                Icons.account_box_outlined,
+                                                                                color: Colors.blue,
+                                                                                size: 25,
+                                                                              ),
+                                                                              Text(
+                                                                                ' Confirmar',
+                                                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400, color: Color.fromARGB(255, 77, 231, 82)),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  );
+                                                                });
+                                                              },
+                                                            );
+                                                          }
+                                                        : null,
+                                                child: Text("Confirmar?"))
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              } else if (elementoActual is Promo) {
+                                // Promos
+                                Promo promo = elementoActual;
+
+                                // CONTENEDOR PRINCIPAL
+                                return Container(
+                                  margin: const EdgeInsets.only(top: 10),
+                                  padding: const EdgeInsets.all(10),
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    color: Color.fromARGB(255, 163, 163, 163),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // IMAGENES DE PRODUCTO
+                                      Container(
+                                        height: 150,
+                                        width: 150,
+                                        decoration: BoxDecoration(
+                                            color: const Color.fromARGB(
+                                                255, 255, 255, 255),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            image: DecorationImage(
+                                                image:
+                                                    NetworkImage(promo.foto))),
+                                      ),
+
+                                      // DESCRIPCIÓN DE PRODUCTO
+
+                                      Container(
+                                          margin:
+                                              const EdgeInsets.only(left: 20),
+                                          height: 180,
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width /
+                                              7.5,
+                                          decoration: BoxDecoration(
+                                            // color: Colors.grey,
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                "Presentación:${promo.nombre}",
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Color.fromARGB(
+                                                        255, 0, 0, 0)),
+                                              ),
+                                              Text(
+                                                "${promo.descripcion}",
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Color.fromARGB(
+                                                        255, 0, 0, 0)),
+                                              ),
+                                              Text(
+                                                "Precio: S/.${promo.precio}",
+                                                style: const TextStyle(
+                                                    fontSize: 24,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color.fromARGB(
+                                                        255, 255, 255, 255)),
+                                              ),
+                                            ],
+                                          )),
+
+                                      // ENTRADAS NUMÉRICAS
+
+                                      Container(
+                                        padding: const EdgeInsets.all(15),
+                                        margin: const EdgeInsets.only(left: 20),
+                                        height: 180,
+                                        width:
+                                            MediaQuery.of(context).size.width <
+                                                    1536
+                                                ? 150
+                                                : MediaQuery.of(context)
+                                                            .size
+                                                            .width >=
+                                                        1536
+                                                    ? 160
+                                                    : 0,
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            // CANTIDAD
+                                            TextFormField(
+                                              controller: promo.cantidad,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter
+                                                    .allow(RegExp(r'^\d+')),
+                                              ],
+                                              decoration: InputDecoration(
+                                                filled: true,
+                                                fillColor: const Color.fromARGB(
+                                                    255,
+                                                    223,
+                                                    225,
+                                                    226), // Cambia este color según tus preferencias
+
+                                                hintText: 'Cantidad',
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                hintStyle: const TextStyle(
+                                                    fontSize: 12),
+                                              ),
+                                              onChanged: (value) {
+                                                /* print(
+                                                                "valor detectado: $value");
+                                                            print(
+                                                                'tipo ${value.runtimeType}');*/
+                                                // SETEAR DE LA LISTA MIXTA(PROD Y PROMO)
+                                                listElementos[index]
+                                                    .cantidad
+                                                    .text = value;
+
+                                                if (value.isNotEmpty) {
+                                                  //print(
+                                                  //    'tipo ${int.parse(value).runtimeType}');
+                                                  setState(() {
+                                                    listElementos[index]
+                                                            .cantidadInt =
+                                                        int.parse(value);
+                                                    listElementos[index].monto =
+                                                        int.parse(value) *
+                                                            listElementos[index]
+                                                                .precio;
+                                                    //print(
+                                                    //    'este es el monto: ${listElementos[index].monto}');
+                                                  });
+                                                }
+                                              },
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                            ),
+
+                                            // PRECIO
+
+                                            TextFormField(
+                                              controller: promo.descuento,
+                                              keyboardType: const TextInputType
+                                                  .numberWithOptions(
+                                                  decimal: true),
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter
+                                                    .allow(RegExp(
+                                                        r'^\d+\.?\d{0,2}')),
+                                              ],
+                                              decoration: InputDecoration(
+                                                filled: true,
+                                                fillColor: const Color.fromARGB(
+                                                    255,
+                                                    223,
+                                                    225,
+                                                    226), // Cambia este color según tus preferencias
+
+                                                hintText: 'S/. Descuento',
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                hintStyle: const TextStyle(
+                                                    fontSize: 12),
+                                              ),
+                                              onChanged: (value) {
+                                                //print(
+                                                //    "0.1) descuento detectado: $value");
+                                                // SETEAR DE LA LISTA MIXTA(PROD Y PROMO)
+                                                listElementos[index]
+                                                    .descuento
+                                                    .text = value;
+                                                if (value.isNotEmpty) {
+                                                  setState(() {
+                                                    listElementos[index]
+                                                            .descuentoDouble =
+                                                        int.parse(value)
+                                                            .toDouble();
+                                                    listElementos[index].monto =
+                                                        listElementos[index]
+                                                                .precio *
+                                                            listElementos[index]
+                                                                .cantidadInt;
+                                                    /*  print(
+                                                                    '0.2) este es el descuento: ${listElementos[index].descuentoDouble}');*/
+                                                  });
+                                                } else {
+                                                  //print(
+                                                  //    '0.3) no hay descuento');
+                                                  setState(() {
+                                                    listElementos[index]
+                                                        .descuentoDouble = 0.00;
+                                                    listElementos[index].monto =
+                                                        listElementos[index]
+                                                                .precio *
+                                                            listElementos[index]
+                                                                .cantidadInt;
+                                                    //print(
+                                                    //    '0.4) este es el monto sin descuento: ${listElementos[index].monto}');
+                                                  });
+                                                }
+
+                                                listElementos[index].monto =
+                                                    listElementos[index].monto -
+                                                        listElementos[index]
+                                                            .descuentoDouble;
+                                                // print(
+                                                //     '0.5) este es el monto con descuento: ${listElementos[index].monto}');
+                                              },
+                                              validator: (value) {
+                                                if (value is String) {
+                                                  if (listElementos[index]
+                                                      .cantidad
+                                                      .isNotEmpty) {
+                                                    if (int.parse(value)
+                                                            .toDouble() >=
+                                                        (listElementos[index]
+                                                                .precio *
+                                                            listElementos[index]
+                                                                .cantidadInt)) {
+                                                      return 'El descuento debe ser menor al monto: ${listElementos[index].precio * listElementos[index].cantidadInt}';
+                                                    } else {
+                                                      return null;
+                                                    }
+                                                  } else {
+                                                    return 'Primero debes poner la cantidad';
+                                                  }
+                                                }
+                                                return null;
+                                              },
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                            ),
+
+                                            const SizedBox(
+                                              height: 10,
+                                            ),
+                                            ElevatedButton(
+                                                onPressed:
+                                                    promo.descuentoDouble > 0 &&
+                                                            promo.cantidadInt >
+                                                                0
+                                                        ? () {
+                                                            showModalBottomSheet(
+                                                              context: context,
+                                                              builder:
+                                                                  (BuildContext
+                                                                      context) {
+                                                                return StatefulBuilder(builder:
+                                                                    (BuildContext
+                                                                            context,
+                                                                        StateSetter
+                                                                            setState) {
+                                                                  return Container(
+                                                                    height: 280,
+                                                                    width: MediaQuery.of(
+                                                                            context)
+                                                                        .size
+                                                                        .width,
+                                                                    padding:
+                                                                        const EdgeInsets
+                                                                            .all(
+                                                                            16.0),
+                                                                    child:
+                                                                        Column(
+                                                                      crossAxisAlignment:
+                                                                          CrossAxisAlignment
+                                                                              .start,
+                                                                      mainAxisSize:
+                                                                          MainAxisSize
+                                                                              .min,
+                                                                      children: [
+                                                                        const Text(
+                                                                          'Autorizado por:',
+                                                                          style:
+                                                                              TextStyle(
+                                                                            color: Color.fromARGB(
+                                                                                255,
+                                                                                3,
+                                                                                64,
+                                                                                113),
+                                                                            fontSize:
+                                                                                20,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                          ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            height:
+                                                                                10),
+                                                                        TextFormField(
+                                                                          controller:
+                                                                              promo.nombreAutorizador,
+                                                                          style:
+                                                                              const TextStyle(
+                                                                            fontSize:
+                                                                                15,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                            color: Color.fromARGB(
+                                                                                255,
+                                                                                1,
+                                                                                41,
+                                                                                75),
+                                                                          ),
+                                                                          decoration:
+                                                                              const InputDecoration(
+                                                                            filled:
+                                                                                true,
+                                                                            fillColor:
+                                                                                Colors.white,
+                                                                            labelText:
+                                                                                "Nombre:",
+                                                                            labelStyle:
+                                                                                TextStyle(
+                                                                              color: Color.fromARGB(255, 0, 48, 87),
+                                                                              fontSize: 13,
+                                                                            ),
+                                                                          ),
+                                                                          onChanged:
+                                                                              (value) {
+                                                                            setState(() {
+                                                                              listElementos[index].nombreAutorizador.text = value;
+                                                                            });
+                                                                          },
+                                                                        ),
+                                                                        TextFormField(
+                                                                          controller:
+                                                                              promo.cargoAutorizador,
+                                                                          style:
+                                                                              const TextStyle(
+                                                                            fontSize:
+                                                                                15,
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                            color: Color.fromARGB(
+                                                                                255,
+                                                                                1,
+                                                                                41,
+                                                                                75),
+                                                                          ),
+                                                                          decoration:
+                                                                              const InputDecoration(
+                                                                            filled:
+                                                                                true,
+                                                                            fillColor:
+                                                                                Colors.white,
+                                                                            labelText:
+                                                                                "Cargo:",
+                                                                            labelStyle:
+                                                                                TextStyle(
+                                                                              color: Color.fromARGB(255, 0, 48, 87),
+                                                                              fontSize: 13,
+                                                                            ),
+                                                                          ),
+                                                                          onChanged:
+                                                                              (value) {
+                                                                            setState(() {
+                                                                              listElementos[index].cargoAutorizador.text = value;
+                                                                            });
+                                                                          },
+                                                                        ),
+                                                                        const SizedBox(
+                                                                            height:
+                                                                                10),
+                                                                        ElevatedButton(
+                                                                          style:
+                                                                              ButtonStyle(backgroundColor: MaterialStateProperty.all(const Color.fromARGB(255, 1, 62, 111))),
+                                                                          onPressed: promo.cargoAutorizador.text.isNotEmpty && promo.nombreAutorizador.text.isNotEmpty
+                                                                              ? () {
+                                                                                  // print("datos de observacion añadidos");
+                                                                                  setState(() {
+                                                                                    promo.observacion = "Descuento aprobado por ${promo.nombreAutorizador.text} - ${promo.cargoAutorizador.text}";
+                                                                                    // print(promo.observacion);
+                                                                                  });
+                                                                                  Navigator.pop(context);
+                                                                                }
+                                                                              : null,
+                                                                          child:
+                                                                              const Row(
+                                                                            children: [
+                                                                              Icon(
+                                                                                Icons.account_box_outlined,
+                                                                                color: Colors.blue,
+                                                                                size: 25,
+                                                                              ),
+                                                                              Text(
+                                                                                ' Confirmar',
+                                                                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400, color: Color.fromARGB(255, 77, 231, 82)),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  );
+                                                                });
+                                                              },
+                                                            );
+                                                          }
+                                                        : null,
+                                                child: Text("Confirmar?"))
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              } else {
+                                return Container(
+                                  child: Text("NO PRODUCTS"),
+                                );
+                              }
+
+                              // Producto producto = listProducts[index];
+                            }))
+                        : const Center(
+                            child: Text("Cargando ..."),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ubicacion
+            Container(
+               //color: Colors.red,
+              height: MediaQuery.of(context).size.height / 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                      child: ElevatedButton(
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        await calculoDeSeleccionadosYMontos();
+                        showDialog<String>(
+                            context: context,
+                            builder: (BuildContext context) => AlertDialog(
+                                  title:
+                                      const Text('Vas a registrar el pedido'),
+                                  content: const Text('¿Estas segur@?'),
+                                  actions: <Widget>[
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        pedidoCancelado();
+                                        Navigator.pop(context, 'Cancelar');
+                                      },
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: listFinalProductosSeleccionados
+                                                  .isNotEmpty &&
+                                              montoTotalPedido >= montoMinimo
+                                          ? () async {
+                                              showDialog(
+                                                context: context,
+                                                builder:
+                                                    (BuildContext context) {
+                                                  return const AlertDialog(
+                                                    content: Row(
+                                                      children: [
+                                                        CircularProgressIndicator(
+                                                          backgroundColor:
+                                                              Colors.green,
+                                                        ),
+                                                        SizedBox(width: 20),
+                                                        Text("Cargando..."),
+                                                      ],
+                                                    ),
+                                                  );
+                                                },
+                                              );
+                                              /* print(
+                                                                    '1) Se presiona el botón de registar');*/
+                                              await crearClienteNRmPedidoyDetallePedido(
+                                                  userProvider.user?.id, tipo);
+                                              Navigator.pop(context);
+                                            }
+                                          : null,
+                                      child: const Text('SI'),
+                                    ),
+                                  ],
+                                ));
+                      }
+                    },
+                    style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(
+                            Color.fromARGB(255, 173, 166, 109))),
+                    child: const Text(
+                      'Registrar Pedido',
+                      style: TextStyle(color: Color.fromARGB(255, 0, 0, 0), fontSize: 15),
+                    ),
+                  )),
+
+                  const SizedBox(
+                    height: 20,
+                  ),
+
+                  // MAPA DE BUSQUEDA
+                  Container(
+                      padding: const EdgeInsets.all(10),
+                      width: 450,
+                      height: MediaQuery.of(context).size.height / 1.25,
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          color: const Color.fromARGB(255, 255, 255, 255)),
+                      // padding: const EdgeInsets.all(9),
+
+                      //padding: const EdgeInsets.all(20),
+                      child: OpenStreetMapSearchAndPick(
+                        buttonTextStyle: TextStyle(fontSize: 12),
+                        buttonColor: const Color.fromARGB(255, 40, 69, 92),
+                        buttonText: 'Obtener coordenadas',
+                        onPicked: (pickedData) {
+                          setState(() {
+                            //direccion = pickedData.addressName;
+                            String road = pickedData.address['road'] ?? '';
+                            String neighbourhood =
+                                pickedData.address['neighbourhood'] ?? '';
+                            String city = pickedData.address['city'] ?? '';
+                            var latitude = pickedData.latLong.latitude;
+                            var longitude = pickedData.latLong.longitude;
+
+                            _direccion.text = '$road $neighbourhood';
+                            _distrito.text = '$city';
+                            _latitud.text = '$latitude';
+                            _longitud.text = '$longitude';
+                          });
+                          //print(pickedData.latLong.latitude);
+                          //print(pickedData.latLong.longitude);
+                          //print(pickedData.address);
+                          //print(pickedData.addressName);
+                          //print("-----------------");
+                          //print(pickedData.address['city']);
+                          //print("---OBJETO DIRECCIÓN---");
+                          //print(pickedData.address.values);
+                        },
+                      )),
+
+                  // BOTONES REGISTROS
+                ],
+              ),
+            )
+            
           ],
         ),
       ),

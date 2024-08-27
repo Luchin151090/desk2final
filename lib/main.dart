@@ -2,6 +2,11 @@ import 'package:desktop2/components/login.dart';
 import 'package:desktop2/components/inicio.dart';
 import 'package:desktop2/components/provider/marcador.dart';
 import 'package:desktop2/components/provider/user_provider.dart';
+import 'package:desktop2/components/vista0.dart';
+import 'package:desktop2/components/vista1.dart';
+import 'package:desktop2/components/vistamedia.dart';
+import 'package:desktop2/components/widget_table.dart';
+import 'package:desktop2/components/widget_tablemini.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
