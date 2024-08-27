@@ -3,6 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class DataTableExample extends StatefulWidget {
   const DataTableExample({super.key});
@@ -28,8 +30,10 @@ class _DataTableExampleState extends State<DataTableExample> {
   }
 
   Future<void> fetchPedidos() async {
+    SharedPreferences empleadoShare = await SharedPreferences.getInstance();
+    var empleadosID = empleadoShare.getInt('empleadoID');
     final response =
-        await http.get(Uri.parse('http://147.182.251.164/api/pedidoDesktop/1'));
+        await http.get(Uri.parse('http://147.182.251.164/api/pedidoDesktop/'+empleadosID.toString()));
     if (response.statusCode == 200) {
       setState(() {
         items = List<Map<String, dynamic>>.from(json.decode(response.body));

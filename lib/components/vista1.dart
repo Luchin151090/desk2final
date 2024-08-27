@@ -88,9 +88,9 @@ class _Vista1State extends State<Vista1> {
   String fechacreacionruta = "NA";
   List<PedidoRuta> pedidosruta = [];
   List<Marker>markers = [];
-
-  void anadirMarcadorPorRuta(int index,LatLng ubicacion){
-     final color = itemColors[index % itemColors.length];
+late Color nuevocolor;
+  void anadirMarcadorPorRuta(int index,LatLng ubicacion,color){
+    //final color = itemColors[index % itemColors.length];
     final marker = Marker(
           width: 200.0,
           height: 200.0,
@@ -103,22 +103,23 @@ class _Vista1State extends State<Vista1> {
                   decoration: BoxDecoration(
                       border: Border.all(width: 3,color: const Color.fromARGB(255, 29, 28, 28)),
                       borderRadius: BorderRadius.circular(50),
-                      color: color.withOpacity(0.5)),
-                  child: Center(child: Text("${index + 1}",style: TextStyle(fontSize: 15,fontWeight: FontWeight.bold),))),
+                      color:color.withOpacity(0.5)),
+                  child: Center(child: Text("${index + 1}",style: const TextStyle(fontSize: 18,
+                  fontWeight: FontWeight.bold),))),
               Icon(
                 Icons.location_on_outlined,
                 color: color,
                 size: 100.0,
-              ).animate().shake(),
+              ),
             ],
           ),
         );
       markers.add(marker);
 }
 
-  Future<dynamic> getpedidosruta(rutaid) async {
-    print("-----ruta---");
-    print(rutaid);
+  Future<dynamic> getpedidosruta(rutaid,color) async {
+   /* print("-----ruta---");
+    print(rutaid);*/
     int count = 1;
     try {
       var res = await http.get(Uri.parse(api + rutapedidos + rutaid.toString()),
@@ -152,7 +153,7 @@ class _Vista1State extends State<Vista1> {
             pedidosruta = tempPedido.isEmpty ? [] : tempPedido;
             for(var i=0;i<pedidosruta.length;i++){
               double offset = count * 0.000005;
-              anadirMarcadorPorRuta(i,LatLng(pedidosruta[i].latitud+offset, pedidosruta[i].longitud+offset));
+              anadirMarcadorPorRuta(i,LatLng(pedidosruta[i].latitud+offset, pedidosruta[i].longitud+offset),color);
               count++;
             }
             
@@ -198,7 +199,7 @@ class _Vista1State extends State<Vista1> {
               numeroruta = rutasempleado.length;
               for(var i=0;i<rutasempleado.length;i++){
                 print("......rutas: ${rutasempleado[i].id}");
-                getpedidosruta(rutasempleado[i].id);
+                getpedidosruta(rutasempleado[i].id,itemColors[i % itemColors.length]);
               }
             });
           }
@@ -268,14 +269,7 @@ class _Vista1State extends State<Vista1> {
                   color: Colors.white,
                   child: Column(
                     children: [
-                      /*ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            isVisible = !isVisible;
-                          });
-                        },
-                        child: const Text("Mostrar"),
-                      ),*/
+                    
                       Container(
                         width: MediaQuery.of(context).size.width / 5.5,
                         height: MediaQuery.of(context).size.height - MediaQuery.of(context).size.height / 10.0,
@@ -284,6 +278,8 @@ class _Vista1State extends State<Vista1> {
                           itemCount: rutasempleado.length,
                           itemBuilder: (context, index) {
                             final color = itemColors[index % itemColors.length];
+                            
+                           // getpedidosruta(rutasempleado[index].id,color);
                             return Container(
                               margin: const EdgeInsets.only(top: 10),
                               height: 100,
@@ -322,8 +318,8 @@ class _Vista1State extends State<Vista1> {
                                   IconButton(
                                       onPressed: ()async {
                                         List<PedidoRuta>pedidosRuta = [];
-                                        pedidosRuta = await getpedidosruta(rutasempleado[index].id);
-                                        print("peiddooooo.....$pedidosRuta");
+                                        pedidosRuta = await getpedidosruta(rutasempleado[index].id,color);
+                                       // print("peiddooooo.....$pedidosRuta");
                                         Navigator.push(
                                             context,
                                             MaterialPageRoute(

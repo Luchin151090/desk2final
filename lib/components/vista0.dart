@@ -14,6 +14,7 @@ import 'dart:async';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
 
 class Vehiculo {
   final int id;
@@ -50,6 +51,12 @@ class Conductor {
       this.seleccionado = false});
 }
 
+class PolylineModel {
+  PolylineModel(this.points, this.color);
+  final List<LatLng> points;
+  final Color color;
+}
+
 class Vista0 extends StatefulWidget {
   const Vista0({Key? key}) : super(key: key);
 
@@ -67,7 +74,7 @@ class _Vista0State extends State<Vista0> {
   String apiEmpleadoPedidos = '/api/empleadopedido/';
   String apiVehiculos = '/api/vehiculo/';
   String totalventas = '/api/totalventas_empleado/';
-
+ Position? _currentPosition;
   bool isVisible = false;
   Conductor? selectedConductor;
   Vehiculo? selectedVehiculo;
@@ -75,6 +82,22 @@ class _Vista0State extends State<Vista0> {
   List<Vehiculo> vehiculos = [];
   int rutaIdLast = 0;
   int idempleado = 0;
+    List<Map<String, dynamic>> items = [];
+  List<Map<String, dynamic>> filteredItems = [];
+  List<bool> selected = [];
+  TextEditingController controller = TextEditingController();
+  String _searchResult = '';
+  bool sortAscending = true;
+  int? sortColumnIndex;
+  List<Marker> markers = []; //
+  List<int> idPedidosSeleccionados = [];
+  Timer? _timer;
+  Map<String, Marker> markersMap = {};
+  //
+  List<LatLng>coordenadasgenerales = [];
+  List<PolylineModel>polylines = [];
+  late LatLng coordenadaActual ;
+  String waypointsString = "NA";
 
   Future<dynamic> createRuta(
       empleado_id, conductor_id, vehiculo_id, distancia, tiempo) async {
@@ -114,8 +137,8 @@ class _Vista0State extends State<Vista0> {
     setState(() {
       rutaIdLast = json.decode(res.body)['id'] ?? 0;
     });
-    print("LAST RUTA EMPLEAD");
-    print(rutaIdLast);
+  //  print("LAST RUTA EMPLEAD");
+    //print(rutaIdLast);
   }
 
   Future<dynamic> updatePedidoRuta(int ruta_id, String estado) async {
@@ -124,8 +147,8 @@ class _Vista0State extends State<Vista0> {
     print(ruta_id);
     print(idPedidosSeleccionados.length);*/
       for (var i = 0; i < idPedidosSeleccionados.length; i++) {
-        print("iterando");
-        print(idPedidosSeleccionados[i]);
+       // print("iterando");
+       // print(idPedidosSeleccionados[i]);
         await http.put(
             Uri.parse(api +
                 apiUpdateRuta +
@@ -141,7 +164,7 @@ class _Vista0State extends State<Vista0> {
 
   Future<void> crearobtenerYactualizarRuta(
       empleadoId, conductorid, vehiculoid, distancia, tiempo, estado) async {
-    print("entro");
+   // print("entro");
     await createRuta(empleadoId, conductorid, vehiculoid, distancia, tiempo);
     await lastRutaEmpleado(empleadoId);
     await updatePedidoRuta(rutaIdLast, estado);
@@ -149,27 +172,100 @@ class _Vista0State extends State<Vista0> {
     //socket.emit('Termine de Updatear', 'si');
   }
 
-  List<Map<String, dynamic>> items = [];
-  List<Map<String, dynamic>> filteredItems = [];
-  List<bool> selected = [];
-  TextEditingController controller = TextEditingController();
-  String _searchResult = '';
-  bool sortAscending = true;
-  int? sortColumnIndex;
-  List<Marker> markers = []; //
-  List<int> idPedidosSeleccionados = [];
-Timer? _timer;
-  Map<String, Marker> markersMap = {};
+
+// ENDPOINT PARA CALCULAR LA RUTA
+/*void _fitBounds() {
+    if (polylines.isNotEmpty && polylines[0].points.isNotEmpty) {
+      final bounds = LatLngBounds.fromPoints(polylines[0].points);
+      mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.all(50.0),
+        ),
+      );
+    }
+  }*/
+Future<void> _calculateRoute() async {
+    try {
+      waypointsString = coordenadasgenerales
+          .map((point) => '${point.longitude},${point.latitude}')
+          .join(';');
+      final routeUrl =
+          'https://router.project-osrm.org/route/v1/driving/$waypointsString?overview=full&geometries=polyline';
+
+      print('Route Request URL: $routeUrl');
+
+      final routeResponse = await http.get(Uri.parse(routeUrl));
+
+      if (routeResponse.statusCode == 200) {
+        final routeData = json.decode(routeResponse.body);
+        print('Route Response data: $routeData');
+
+        if (routeData['routes'] != null && routeData['routes'].isNotEmpty) {
+          final route = routeData['routes'][0];
+          final encodedGeometry = route['geometry'];
+          print('Raw geometry: $encodedGeometry');
+
+          // Usar el nuevo endpoint para decodificar la ruta
+          final decodeUrl = 'http://147.182.251.164/decode-route';
+          final decodeResponse = await http.post(
+            Uri.parse(decodeUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'encodedPath': encodedGeometry}),
+          );
+
+          if (decodeResponse.statusCode == 200) {
+            final decodeData = json.decode(decodeResponse.body);
+            final decodedPoints = (decodeData['decodedPath'] as List)
+                .map(
+                    (point) => LatLng(point[0].toDouble(), point[1].toDouble()))
+                .toList();
+
+            print('Decoded points: $decodedPoints');
+            print('Number of decoded points: ${decodedPoints.length}');
+
+            if (decodedPoints.isNotEmpty) {
+              setState(() {
+                polylines = [
+                  PolylineModel(decodedPoints, Colors.purple),
+                ];
+              });
+
+              //_fitBounds();
+            } else {
+              throw Exception('No valid points in the route');
+            }
+          } else {
+            throw Exception(
+                'Failed to decode route: ${decodeResponse.statusCode}');
+          }
+        } else {
+          throw Exception('No routes found in the response');
+        }
+      } else {
+        throw Exception('Failed to load route: ${routeResponse.statusCode}');
+      }
+    } catch (e) {
+      print('Error calculating route: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to calculate route: $e')),
+      );
+    }
+  }
 
 // Método para añadir un marcador al mapa
   void _addMarkerToMap(Map<String, dynamic> item) {
     // Verificar que latitud y longitud no sean nulos antes de usarlos
+   int count  = 1;
     final double? latitud = item['latitud'];
     final double? longitud = item['longitud'];
-
+double offset = count * 0.000005;
     if (latitud != null && longitud != null) {
       // Convertimos latitud y longitud en LatLng
-      final latLng = LatLng(latitud + 0.000000001, longitud + 0.00000001);
+      final latLng = LatLng(latitud + offset,
+       longitud + offset);
+
+       coordenadasgenerales.add(latLng);
 
       // Creamos un marcador
       final marker = Marker(
@@ -188,6 +284,8 @@ Timer? _timer;
         markersMap[item['ruta_id'].toString()] = marker;
         markers.add(marker);
       });
+
+       _calculateRoute();
     } else {
       // Manejar el caso donde latitud o longitud sean nulos
       print('Error: Coordenadas inválidas (latitud o longitud es null)');
@@ -204,16 +302,25 @@ Timer? _timer;
         markers.remove(markersMap[markerKey]);
         markersMap.remove(markerKey);
       }
+       polylines.clear();
+       coordenadasgenerales.clear();
+       coordenadasgenerales.add(coordenadaActual);
     });
+   
   }
 
 // Método para agregar todos los marcadores al mapa
   void _addAllMarkersToMap() {
     setState(() {
       for (var item in filteredItems) {
+        // 1 - aqui empezamos  a dibujar la ruta
+        LatLng coordenadasimple = LatLng(item['latitud'], item['longitud']);
+        coordenadasgenerales.add(coordenadasimple);
         _addMarkerToMap(item);
+
       }
     });
+    _calculateRoute();
   }
 
 // Método para remover todos los marcadores del mapa
@@ -221,16 +328,19 @@ Timer? _timer;
     setState(() {
       markers.clear();
       markersMap.clear();
+       polylines.clear();
+       coordenadasgenerales.clear();
+       coordenadasgenerales.add(coordenadaActual);
     });
   }
 
   Future<void> fetchPedidos() async {
     SharedPreferences empleadoShare = await SharedPreferences.getInstance();
 
-      var empleadoIDs = empleadoShare.getInt('empleadoID');
-    final response =
-        await http.get(Uri.parse(api+'/api/pedidoDesktop/'+empleadoIDs.toString()),
-         headers: {"Content-type": "application/json"});
+    var empleadoIDs = empleadoShare.getInt('empleadoID');
+    final response = await http.get(
+        Uri.parse(api + '/api/pedidoDesktop/' + empleadoIDs.toString()),
+        headers: {"Content-type": "application/json"});
     if (response.statusCode == 200) {
       setState(() {
         items = List<Map<String, dynamic>>.from(json.decode(response.body));
@@ -373,7 +483,7 @@ Timer? _timer;
 
   Future<void> updatePedido(int pedidoID, Map<String, dynamic> newDatos) async {
     final response = await http.put(
-      Uri.parse(api+'/api/pedidoModificado/$pedidoID'),
+      Uri.parse(api + '/api/pedidoModificado/$pedidoID'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(newDatos),
     );
@@ -388,7 +498,7 @@ Timer? _timer;
 
   Future<void> deletePedido(int pedidoId, String motivo) async {
     final response = await http.delete(
-      Uri.parse(api+'/api/revertirpedidocan/$pedidoId'),
+      Uri.parse(api + '/api/revertirpedidocan/$pedidoId'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({"motivoped": motivo}),
     );
@@ -536,21 +646,63 @@ Timer? _timer;
     }
   }
 
+  Future<void> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Verifica si el servicio de ubicación está habilitado
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // El servicio de ubicación no está habilitado, no continúes
+      return Future.error('Los servicios de ubicación están deshabilitados.');
+    }
+
+    // Verifica el permiso de ubicación
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Los permisos están denegados, no continúes
+        return Future.error('Los permisos de ubicación están denegados.');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      // Los permisos están denegados para siempre, no continúes
+      return Future.error('Los permisos de ubicación están denegados permanentemente, no podemos solicitar permisos.');
+    }
+
+    // Cuando los permisos están concedidos, obtiene la ubicación actual
+    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    setState(() {
+      _currentPosition = position;
+      LatLng posicionactual = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      coordenadaActual = posicionactual;
+      coordenadasgenerales.add(coordenadaActual);
+    });
+  }
   @override
   void initState() {
     super.initState();
     //getPedidos();
+    if(coordenadasgenerales.isEmpty){
+_determinePosition();
+    }
+    else{
+      coordenadasgenerales.add(LatLng(-16.398705475681435, -71.53694082004597));
+    }
+     
+     
     fetchPedidos();
     getVehiculos();
     getConductores();
     // Set up a timer to periodically call fetchPedidos
-   
+
     //getallrutasempleado();
   }
 
-   @override
+  @override
   void dispose() {
- 
     super.dispose();
   }
 
@@ -560,9 +712,7 @@ Timer? _timer;
     idempleado = userProvider.user!.id;
     return Scaffold(
         appBar: AppBar(
-          iconTheme: const IconThemeData(
-            color: Colors.white
-          ),
+          iconTheme: const IconThemeData(color: Colors.white),
           backgroundColor: const Color.fromARGB(255, 46, 46, 46),
           toolbarHeight: MediaQuery.of(context).size.height / 10.0,
           title: Row(
@@ -607,19 +757,27 @@ Timer? _timer;
                         width: MediaQuery.of(context).size.width / 2,
                         height: MediaQuery.of(context).size.height / 10,
                         color: const Color.fromARGB(255, 40, 49, 148),
-                        child:  Center(
+                        child: Center(
                             child: Row(
-                              children: [
-                                Text(
-                                                          "Pedidos",
-                                                          style: TextStyle(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                           const Text(
+                              "Pedidos",
+                              style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white),
-                                                        ),
-                                                        IconButton(onPressed: (){fetchPedidos();}, icon: Icon(Icons.refresh))
-                              ],
-                            ))),
+                            ),
+                            Container(
+                              color: const Color.fromARGB(255, 50, 50, 50),
+                              child: IconButton(
+                                  onPressed: () {
+                                    fetchPedidos();
+                                  },
+                                  icon: const Icon(Icons.refresh,color: Colors.white,)),
+                            )
+                          ],
+                        ))),
                     const SizedBox(
                       height: 49,
                     ),
@@ -844,24 +1002,32 @@ Timer? _timer;
                                       )),
                                       DataCell(Text(
                                         filteredItems[index]['estado'],
-                                        style: TextStyle(fontSize: 9 + 2,
-                                        fontWeight: FontWeight.bold,
-                                        color: filteredItems[index]['estado']
+                                        style: TextStyle(
+                                            fontSize: 9 + 2,
+                                            fontWeight: FontWeight.bold,
+                                            color: filteredItems[index]
+                                                            ['estado']
                                                         .toString() ==
                                                     'pendiente'
                                                 ? const Color.fromARGB(
-                                                    255, 33, 40, 243) :
-                                                    filteredItems[index]['estado']
-                                                        .toString() ==
-                                                    'anulado' ?
-                                                 Color.fromARGB(255, 130, 18, 68) : 
-                                                 filteredItems[index]['estado']
-                                                        .toString() ==
-                                                    'en proceso' ? Color.fromARGB(255, 33, 96, 18) :
-                                                    filteredItems[index]['estado']
-                                                        .toString() ==
-                                                    'terminado' ? const Color.fromARGB(255, 81, 39, 89) : Colors.black
-                                        ),
+                                                    255, 33, 40, 243)
+                                                : filteredItems[index]['estado']
+                                                            .toString() ==
+                                                        'anulado'
+                                                    ? Color.fromARGB(
+                                                        255, 130, 18, 68)
+                                                    : filteredItems[index]
+                                                                    ['estado']
+                                                                .toString() ==
+                                                            'en proceso'
+                                                        ? Color.fromARGB(
+                                                            255, 33, 96, 18)
+                                                        : filteredItems[index]['estado']
+                                                                    .toString() ==
+                                                                'terminado'
+                                                            ? const Color.fromARGB(
+                                                                255, 81, 39, 89)
+                                                            : Colors.black),
                                       )),
                                       DataCell(Text(
                                         filteredItems[index]['fecha'],
@@ -907,15 +1073,14 @@ Timer? _timer;
                                           // Añadir marcador al mapa
                                           idPedidosSeleccionados
                                               .add(filteredItems[index]['id']);
-                                          print(
-                                              "uno mas $idPedidosSeleccionados");
+                                          /*print(
+                                              "uno mas $idPedidosSeleccionados");*/
                                           _addMarkerToMap(filteredItems[index]);
                                         } else {
                                           // Remover marcador del mapa
                                           idPedidosSeleccionados.remove(
                                               filteredItems[index]['id']);
-                                          print(
-                                              "menos uno $idPedidosSeleccionados");
+                                          //print("menos uno $idPedidosSeleccionados");
                                           _removeMarkerFromMap(
                                               filteredItems[index]);
                                         }
@@ -928,8 +1093,8 @@ Timer? _timer;
                                               .map<int>(
                                                   (item) => item['id'] as int)
                                               .toList();
-                                          print(
-                                              "todos $idPedidosSeleccionados");
+                                         /* print(
+                                              "todos $idPedidosSeleccionados");*/
                                           _addAllMarkersToMap();
                                         }
 
@@ -938,8 +1103,8 @@ Timer? _timer;
                                             .every((item) => item == false);
                                         if (allDeselected) {
                                           idPedidosSeleccionados = [];
-                                          print(
-                                              "ninguno $idPedidosSeleccionados");
+                                         /* print(
+                                              "ninguno $idPedidosSeleccionados");*/
                                           _removeAllMarkersFromMap();
                                         }
                                       });
@@ -1019,8 +1184,7 @@ Timer? _timer;
                           height: MediaQuery.of(context).size.height / 12,
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10)
-                          ),
+                              borderRadius: BorderRadius.circular(10)),
                           child: ElevatedButton(
                               onPressed: () {
                                 Navigator.push(
@@ -1031,7 +1195,7 @@ Timer? _timer;
                               },
                               style: ButtonStyle(
                                   //shape: WidgetStateProperty.all(),
-                                  
+
                                   backgroundColor: WidgetStateProperty.all(
                                       const Color.fromARGB(255, 82, 25, 44))),
                               child: const Row(
@@ -1070,6 +1234,15 @@ Timer? _timer;
                                 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                             userAgentPackageName: 'com.example.app',
                           ),
+                          PolylineLayer(
+            polylines: polylines
+                .map((polylineModel) => Polyline(
+                      points: polylineModel.points,
+                      color: polylineModel.color,
+                      strokeWidth: 4.0,
+                    ))
+                .toList(),
+          ),
                           MarkerLayer(markers: markers)
                         ],
                       ),
@@ -1080,49 +1253,54 @@ Timer? _timer;
                     Container(
                       width: MediaQuery.of(context).size.width / 2,
                       child: ElevatedButton(
-                          onPressed:selected.isNotEmpty 
-                          && selectedConductor!=null 
-                          && selectedVehiculo != null
-                          ? () async {
-                            showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    title: Text("Crear ruta"),
-                                    actions: [
-                                      TextButton(
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                          },
-                                          child: Text("Cancelar")),
-                                      TextButton(
-                                          onPressed: () async {
-                                            CircularProgressIndicator(
-                                              color: Colors.pink,
-                                            );
-                                            await crearobtenerYactualizarRuta(
-                                                idempleado,
-                                                selectedConductor!.id,
-                                                selectedVehiculo!.id,
-                                                0,
-                                                0,
-                                                'en proceso');
-                                            setState(() {
-                                              selected = List<bool>.filled(
-                                                  filteredItems.length, false);
-                                              _removeAllMarkersFromMap();
-                                              idPedidosSeleccionados = [];
-                                            });
-                                            print("---verificar lista de idps");
-                                            print(idPedidosSeleccionados);
-                                            fetchPedidos();
-                                            Navigator.pop(context);
-                                          },
-                                          child: Text("Aceptar"))
-                                    ],
-                                  );
-                                });
-                          }:null,
+                          onPressed: selected.isNotEmpty &&
+                                  selectedConductor != null &&
+                                  selectedVehiculo != null
+                              ? () async {
+                                  showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: Text("Crear ruta"),
+                                          actions: [
+                                            TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                },
+                                                child: Text("Cancelar")),
+                                            TextButton(
+                                                onPressed: () async {
+                                                  CircularProgressIndicator(
+                                                    color: Colors.pink,
+                                                  );
+                                                  await crearobtenerYactualizarRuta(
+                                                      idempleado,
+                                                      selectedConductor!.id,
+                                                      selectedVehiculo!.id,
+                                                      0,
+                                                      0,
+                                                      'en proceso');
+                                                  setState(() {
+                                                    selected =
+                                                        List<bool>.filled(
+                                                            filteredItems
+                                                                .length,
+                                                            false);
+                                                    _removeAllMarkersFromMap();
+                                                    idPedidosSeleccionados = [];
+                                                  });
+                                                /*  print(
+                                                      "---verificar lista de idps");*/
+                                                 // print(idPedidosSeleccionados);
+                                                  fetchPedidos();
+                                                  Navigator.pop(context);
+                                                },
+                                                child: Text("Aceptar"))
+                                          ],
+                                        );
+                                      });
+                                }
+                              : null,
                           style: ButtonStyle(
                               backgroundColor: WidgetStateProperty.all(
                                   Color.fromARGB(255, 40, 33, 165))),
