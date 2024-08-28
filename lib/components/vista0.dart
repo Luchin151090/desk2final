@@ -15,6 +15,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:math' as math;
 
 class Vehiculo {
   final int id;
@@ -74,7 +75,7 @@ class _Vista0State extends State<Vista0> {
   String apiEmpleadoPedidos = '/api/empleadopedido/';
   String apiVehiculos = '/api/vehiculo/';
   String totalventas = '/api/totalventas_empleado/';
- Position? _currentPosition;
+  Position? _currentPosition;
   bool isVisible = false;
   Conductor? selectedConductor;
   Vehiculo? selectedVehiculo;
@@ -82,7 +83,7 @@ class _Vista0State extends State<Vista0> {
   List<Vehiculo> vehiculos = [];
   int rutaIdLast = 0;
   int idempleado = 0;
-    List<Map<String, dynamic>> items = [];
+  List<Map<String, dynamic>> items = [];
   List<Map<String, dynamic>> filteredItems = [];
   List<bool> selected = [];
   TextEditingController controller = TextEditingController();
@@ -94,9 +95,9 @@ class _Vista0State extends State<Vista0> {
   Timer? _timer;
   Map<String, Marker> markersMap = {};
   //
-  List<LatLng>coordenadasgenerales = [];
-  List<PolylineModel>polylines = [];
-  late LatLng coordenadaActual ;
+  List<LatLng> coordenadasgenerales = [];
+  List<PolylineModel> polylines = [];
+  late LatLng coordenadaActual;
   String waypointsString = "NA";
 
   Future<dynamic> createRuta(
@@ -137,7 +138,7 @@ class _Vista0State extends State<Vista0> {
     setState(() {
       rutaIdLast = json.decode(res.body)['id'] ?? 0;
     });
-  //  print("LAST RUTA EMPLEAD");
+    //  print("LAST RUTA EMPLEAD");
     //print(rutaIdLast);
   }
 
@@ -147,8 +148,8 @@ class _Vista0State extends State<Vista0> {
     print(ruta_id);
     print(idPedidosSeleccionados.length);*/
       for (var i = 0; i < idPedidosSeleccionados.length; i++) {
-       // print("iterando");
-       // print(idPedidosSeleccionados[i]);
+        // print("iterando");
+        // print(idPedidosSeleccionados[i]);
         await http.put(
             Uri.parse(api +
                 apiUpdateRuta +
@@ -164,14 +165,13 @@ class _Vista0State extends State<Vista0> {
 
   Future<void> crearobtenerYactualizarRuta(
       empleadoId, conductorid, vehiculoid, distancia, tiempo, estado) async {
-   // print("entro");
+    // print("entro");
     await createRuta(empleadoId, conductorid, vehiculoid, distancia, tiempo);
     await lastRutaEmpleado(empleadoId);
     await updatePedidoRuta(rutaIdLast, estado);
     setState(() {});
     //socket.emit('Termine de Updatear', 'si');
   }
-
 
 // ENDPOINT PARA CALCULAR LA RUTA
 /*void _fitBounds() {
@@ -185,65 +185,106 @@ class _Vista0State extends State<Vista0> {
       );
     }
   }*/
-Future<void> _calculateRoute() async {
+  Future<void> _calculateRoute() async {
     try {
-      waypointsString = coordenadasgenerales
-          .map((point) => '${point.longitude},${point.latitude}')
-          .join(';');
-      final routeUrl =
-          'https://router.project-osrm.org/route/v1/driving/$waypointsString?overview=full&geometries=polyline';
+      if (coordenadasgenerales.length < 2) {
+        print('Not enough points to calculate a route');
+        return;
+      }
 
-      print('Route Request URL: $routeUrl');
+      const int maxWaypointsPerRequest = 25;
+      List<LatLng> allRoutePoints = [];
+      List<LatLng> problematicCoordinates = [];
 
-      final routeResponse = await http.get(Uri.parse(routeUrl));
+      for (int i = 0;
+          i < coordenadasgenerales.length;
+          i += maxWaypointsPerRequest) {
+        List<LatLng> currentBatch = coordenadasgenerales.sublist(i,
+            math.min(i + maxWaypointsPerRequest, coordenadasgenerales.length));
 
-      if (routeResponse.statusCode == 200) {
-        final routeData = json.decode(routeResponse.body);
-        print('Route Response data: $routeData');
+        String waypointsString = currentBatch
+            .map((point) =>
+                '${point.longitude.toStringAsFixed(6)},${point.latitude.toStringAsFixed(6)}')
+            .join(';');
 
-        if (routeData['routes'] != null && routeData['routes'].isNotEmpty) {
-          final route = routeData['routes'][0];
-          final encodedGeometry = route['geometry'];
-          print('Raw geometry: $encodedGeometry');
+        final routeUrl =
+            'https://router.project-osrm.org/route/v1/driving/$waypointsString?overview=full&geometries=polyline';
+        print('Route Request URL: $routeUrl');
 
-          // Usar el nuevo endpoint para decodificar la ruta
-          final decodeUrl = 'http://147.182.251.164/decode-route';
-          final decodeResponse = await http.post(
-            Uri.parse(decodeUrl),
-            headers: {'Content-Type': 'application/json'},
-            body: json.encode({'encodedPath': encodedGeometry}),
-          );
+        bool success = false;
+        int retries = 0;
+        while (!success && retries < 5) {
+          try {
+            final routeResponse = await http.get(Uri.parse(routeUrl));
 
-          if (decodeResponse.statusCode == 200) {
-            final decodeData = json.decode(decodeResponse.body);
-            final decodedPoints = (decodeData['decodedPath'] as List)
-                .map(
-                    (point) => LatLng(point[0].toDouble(), point[1].toDouble()))
-                .toList();
+            if (routeResponse.statusCode == 200) {
+              final routeData = json.decode(routeResponse.body);
+              if (routeData['routes'] != null &&
+                  routeData['routes'].isNotEmpty) {
+                final route = routeData['routes'][0];
+                final encodedGeometry = route['geometry'];
 
-            print('Decoded points: $decodedPoints');
-            print('Number of decoded points: ${decodedPoints.length}');
+                final decodeUrl = 'http://147.182.251.164/decode-route';
+                final decodeResponse = await http.post(
+                  Uri.parse(decodeUrl),
+                  headers: {'Content-Type': 'application/json'},
+                  body: json.encode({'encodedPath': encodedGeometry}),
+                );
 
-            if (decodedPoints.isNotEmpty) {
-              setState(() {
-                polylines = [
-                  PolylineModel(decodedPoints, Colors.purple),
-                ];
-              });
+                if (decodeResponse.statusCode == 200) {
+                  final decodeData = json.decode(decodeResponse.body);
+                  final decodedPoints = (decodeData['decodedPath'] as List)
+                      .map((point) =>
+                          LatLng(point[0].toDouble(), point[1].toDouble()))
+                      .toList();
 
-              //_fitBounds();
+                  allRoutePoints.addAll(decodedPoints);
+                  success = true;
+                } else {
+                  throw Exception(
+                      'Failed to decode route: ${decodeResponse.statusCode}');
+                }
+              }
+            } else if (routeResponse.statusCode == 400) {
+              print('Bad request for batch: $waypointsString');
+              problematicCoordinates.addAll(currentBatch);
+              break;
+            } else if (routeResponse.statusCode == 429) {
+              retries++;
+              int waitTime = math.pow(2, retries).toInt() * 1000;
+              print('Rate limited. Retrying in $waitTime ms...');
+              await Future.delayed(Duration(milliseconds: waitTime));
             } else {
-              throw Exception('No valid points in the route');
+              throw Exception(
+                  'Failed to load route: ${routeResponse.statusCode}');
             }
-          } else {
-            throw Exception(
-                'Failed to decode route: ${decodeResponse.statusCode}');
+          } catch (e) {
+            retries++;
+            print('Error on attempt $retries: $e');
+            if (retries >= 5) throw e;
+            await Future.delayed(Duration(seconds: retries));
           }
-        } else {
-          throw Exception('No routes found in the response');
+        }
+
+        await Future.delayed(Duration(milliseconds: 500));
+      }
+
+      if (allRoutePoints.isNotEmpty) {
+        setState(() {
+          polylines = [PolylineModel(allRoutePoints, Colors.purple)];
+        });
+
+        if (problematicCoordinates.isNotEmpty) {
+          print('Warning: Some coordinates were skipped due to errors:');
+          problematicCoordinates.forEach((coord) => print(coord));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Warning: Some coordinates were skipped. Check logs for details.')),
+          );
         }
       } else {
-        throw Exception('Failed to load route: ${routeResponse.statusCode}');
+        throw Exception('No valid points in the route');
       }
     } catch (e) {
       print('Error calculating route: $e');
@@ -256,16 +297,15 @@ Future<void> _calculateRoute() async {
 // Método para añadir un marcador al mapa
   void _addMarkerToMap(Map<String, dynamic> item) {
     // Verificar que latitud y longitud no sean nulos antes de usarlos
-   int count  = 1;
+    int count = 1;
     final double? latitud = item['latitud'];
     final double? longitud = item['longitud'];
-double offset = count * 0.000005;
+    double offset = count * 0.000005;
     if (latitud != null && longitud != null) {
       // Convertimos latitud y longitud en LatLng
-      final latLng = LatLng(latitud + offset,
-       longitud + offset);
+      final latLng = LatLng(latitud + offset, longitud + offset);
 
-       coordenadasgenerales.add(latLng);
+      coordenadasgenerales.add(latLng);
 
       // Creamos un marcador
       final marker = Marker(
@@ -285,7 +325,7 @@ double offset = count * 0.000005;
         markers.add(marker);
       });
 
-       _calculateRoute();
+      _calculateRoute();
     } else {
       // Manejar el caso donde latitud o longitud sean nulos
       print('Error: Coordenadas inválidas (latitud o longitud es null)');
@@ -302,25 +342,42 @@ double offset = count * 0.000005;
         markers.remove(markersMap[markerKey]);
         markersMap.remove(markerKey);
       }
-       polylines.clear();
-       coordenadasgenerales.clear();
-       coordenadasgenerales.add(coordenadaActual);
+      polylines.clear();
+      coordenadasgenerales.clear();
+      coordenadasgenerales.add(coordenadaActual);
     });
-   
   }
 
 // Método para agregar todos los marcadores al mapa
   void _addAllMarkersToMap() {
+    coordenadasgenerales.clear();
+    coordenadasgenerales.add(coordenadaActual);
     setState(() {
       for (var item in filteredItems) {
         // 1 - aqui empezamos  a dibujar la ruta
         LatLng coordenadasimple = LatLng(item['latitud'], item['longitud']);
         coordenadasgenerales.add(coordenadasimple);
-        _addMarkerToMap(item);
-
+        // _addMarkerToMap(item);
       }
     });
-    _calculateRoute();
+    //_calculateRoute();
+    int batchSize = 10;
+    for (int i = 0; i < filteredItems.length; i += batchSize) {
+      Future.delayed(Duration(milliseconds: 100 * (i ~/ batchSize)), () {
+        setState(() {
+          for (int j = i; j < i + batchSize && j < filteredItems.length; j++) {
+            _addMarkerToMap(filteredItems[j]);
+          }
+        });
+      });
+    }
+
+    // Calculate route after all markers are added
+    Future.delayed(
+        Duration(milliseconds: 100 * (filteredItems.length ~/ batchSize + 1)),
+        () {
+      _calculateRoute();
+    });
   }
 
 // Método para remover todos los marcadores del mapa
@@ -328,9 +385,9 @@ double offset = count * 0.000005;
     setState(() {
       markers.clear();
       markersMap.clear();
-       polylines.clear();
-       coordenadasgenerales.clear();
-       coordenadasgenerales.add(coordenadaActual);
+      polylines.clear();
+      coordenadasgenerales.clear();
+      coordenadasgenerales.add(coordenadaActual);
     });
   }
 
@@ -669,30 +726,32 @@ double offset = count * 0.000005;
 
     if (permission == LocationPermission.deniedForever) {
       // Los permisos están denegados para siempre, no continúes
-      return Future.error('Los permisos de ubicación están denegados permanentemente, no podemos solicitar permisos.');
+      return Future.error(
+          'Los permisos de ubicación están denegados permanentemente, no podemos solicitar permisos.');
     }
 
     // Cuando los permisos están concedidos, obtiene la ubicación actual
-    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
     setState(() {
       _currentPosition = position;
-      LatLng posicionactual = LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+      LatLng posicionactual =
+          LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       coordenadaActual = posicionactual;
       coordenadasgenerales.add(coordenadaActual);
     });
   }
+
   @override
   void initState() {
     super.initState();
     //getPedidos();
-    if(coordenadasgenerales.isEmpty){
-_determinePosition();
-    }
-    else{
+    if (coordenadasgenerales.isEmpty) {
+      _determinePosition();
+    } else {
       coordenadasgenerales.add(LatLng(-16.398705475681435, -71.53694082004597));
     }
-     
-     
+
     fetchPedidos();
     getVehiculos();
     getConductores();
@@ -759,9 +818,9 @@ _determinePosition();
                         color: const Color.fromARGB(255, 40, 49, 148),
                         child: Center(
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                           const Text(
+                            const Text(
                               "Pedidos",
                               style: TextStyle(
                                   fontSize: 20,
@@ -774,7 +833,10 @@ _determinePosition();
                                   onPressed: () {
                                     fetchPedidos();
                                   },
-                                  icon: const Icon(Icons.refresh,color: Colors.white,)),
+                                  icon: const Icon(
+                                    Icons.refresh,
+                                    color: Colors.white,
+                                  )),
                             )
                           ],
                         ))),
@@ -1093,7 +1155,7 @@ _determinePosition();
                                               .map<int>(
                                                   (item) => item['id'] as int)
                                               .toList();
-                                         /* print(
+                                          /* print(
                                               "todos $idPedidosSeleccionados");*/
                                           _addAllMarkersToMap();
                                         }
@@ -1103,7 +1165,7 @@ _determinePosition();
                                             .every((item) => item == false);
                                         if (allDeselected) {
                                           idPedidosSeleccionados = [];
-                                         /* print(
+                                          /* print(
                                               "ninguno $idPedidosSeleccionados");*/
                                           _removeAllMarkersFromMap();
                                         }
@@ -1235,14 +1297,14 @@ _determinePosition();
                             userAgentPackageName: 'com.example.app',
                           ),
                           PolylineLayer(
-            polylines: polylines
-                .map((polylineModel) => Polyline(
-                      points: polylineModel.points,
-                      color: polylineModel.color,
-                      strokeWidth: 4.0,
-                    ))
-                .toList(),
-          ),
+                            polylines: polylines
+                                .map((polylineModel) => Polyline(
+                                      points: polylineModel.points,
+                                      color: polylineModel.color,
+                                      strokeWidth: 4.0,
+                                    ))
+                                .toList(),
+                          ),
                           MarkerLayer(markers: markers)
                         ],
                       ),
@@ -1289,9 +1351,9 @@ _determinePosition();
                                                     _removeAllMarkersFromMap();
                                                     idPedidosSeleccionados = [];
                                                   });
-                                                /*  print(
+                                                  /*  print(
                                                       "---verificar lista de idps");*/
-                                                 // print(idPedidosSeleccionados);
+                                                  // print(idPedidosSeleccionados);
                                                   fetchPedidos();
                                                   Navigator.pop(context);
                                                 },
