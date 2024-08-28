@@ -16,6 +16,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:math' as math;
+import 'package:intl/intl.dart';
+import 'dart:math';
 
 class Vehiculo {
   final int id;
@@ -99,6 +101,20 @@ class _Vista0State extends State<Vista0> {
   List<PolylineModel> polylines = [];
   late LatLng coordenadaActual;
   String waypointsString = "NA";
+  double distanciatotal = 0.0;
+  double tiempototal = 0.0;
+  List<Marker> puntopartida = [];
+
+
+  String convertToDateOnly(String dateTimeString) {
+    // Convertir la cadena de entrada a un objeto DateTime
+    DateTime parsedDateTime = DateTime.parse(dateTimeString);
+
+    // Formatear solo la parte de la fecha (sin la hora)
+    String formattedDate = DateFormat('yyyy-MM-dd').format(parsedDateTime);
+
+    return formattedDate;
+  }
 
   Future<dynamic> createRuta(
       empleado_id, conductor_id, vehiculo_id, distancia, tiempo) async {
@@ -223,6 +239,11 @@ class _Vista0State extends State<Vista0> {
                   routeData['routes'].isNotEmpty) {
                 final route = routeData['routes'][0];
                 final encodedGeometry = route['geometry'];
+
+              // Convertir a double después de redondear a 2 decimales
+distanciatotal = double.parse((route['distance'] / 1000).toStringAsFixed(2)); // 1000 metros
+tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 segundos
+
 
                 final decodeUrl = 'http://147.182.251.164/decode-route';
                 final decodeResponse = await http.post(
@@ -697,7 +718,7 @@ class _Vista0State extends State<Vista0> {
     if (date.isAfter(today) || date.isAtSameMomentAs(today)) {
       return Color.fromARGB(255, 51, 18, 162); // Color para hoy
     } else if (date.isAfter(yesterday) && date.isBefore(today)) {
-      return Color.fromARGB(255, 235, 220, 146); // Color para ayer
+      return Color.fromARGB(255, 255, 220, 24); // Color para ayer
     } else {
       return const Color.fromARGB(255, 181, 12, 0); // Color para más de un día
     }
@@ -739,6 +760,15 @@ class _Vista0State extends State<Vista0> {
           LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
       coordenadaActual = posicionactual;
       coordenadasgenerales.add(coordenadaActual);
+      puntopartida.add(Marker(
+          width: 80,
+          height: 80,
+          point: coordenadaActual,
+          child: Icon(
+            Icons.flag_circle_rounded,
+            size: 50,
+            color: Color.fromARGB(255, 73, 46, 223),
+          )));
     });
   }
 
@@ -804,16 +834,17 @@ class _Vista0State extends State<Vista0> {
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height / 1,
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // BARRA LATERAL
               Container(
-                width: MediaQuery.of(context).size.width / 2,
+                width: MediaQuery.of(context).size.width / 1.5,
                 height: MediaQuery.of(context).size.height,
                 color: Colors.white,
                 child: Column(
                   children: [
                     Container(
-                        width: MediaQuery.of(context).size.width / 2,
+                        width: MediaQuery.of(context).size.width / 1.5,
                         height: MediaQuery.of(context).size.height / 10,
                         color: const Color.fromARGB(255, 40, 49, 148),
                         child: Center(
@@ -962,7 +993,9 @@ class _Vista0State extends State<Vista0> {
                                   DataColumn(
                                     label: const Text(
                                       'ID',
-                                      style: TextStyle(fontSize: 11),
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold),
                                     ),
                                     onSort: (int columnIndex, bool ascending) =>
                                         _sort<int>((item) => item['id'],
@@ -972,6 +1005,7 @@ class _Vista0State extends State<Vista0> {
                                     label: const Text('Nombre',
                                         style: TextStyle(
                                             fontStyle: FontStyle.italic,
+                                            fontWeight: FontWeight.bold,
                                             fontSize: 11)),
                                     onSort: (int columnIndex, bool ascending) =>
                                         _sort<String>((item) => item['nombre'],
@@ -981,6 +1015,7 @@ class _Vista0State extends State<Vista0> {
                                     label: const Text('Distrito',
                                         style: TextStyle(
                                             fontStyle: FontStyle.italic,
+                                            fontWeight: FontWeight.bold,
                                             fontSize: 11)),
                                     onSort: (int columnIndex, bool ascending) =>
                                         _sort<String>(
@@ -992,7 +1027,8 @@ class _Vista0State extends State<Vista0> {
                                     label: const Text('Tipo',
                                         style: TextStyle(
                                             fontStyle: FontStyle.italic,
-                                            fontSize: 11)),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold)),
                                     onSort: (int columnIndex, bool ascending) =>
                                         _sort<String>((item) => item['tipo'],
                                             columnIndex, ascending),
@@ -1001,7 +1037,8 @@ class _Vista0State extends State<Vista0> {
                                     label: const Text('Estado',
                                         style: TextStyle(
                                             fontStyle: FontStyle.italic,
-                                            fontSize: 11)),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold)),
                                     onSort: (int columnIndex, bool ascending) =>
                                         _sort<String>((item) => item['estado'],
                                             columnIndex, ascending),
@@ -1010,16 +1047,21 @@ class _Vista0State extends State<Vista0> {
                                     label: const Text('Fecha',
                                         style: TextStyle(
                                             fontStyle: FontStyle.italic,
-                                            fontSize: 11)),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold)),
                                     onSort: (int columnIndex, bool ascending) =>
                                         _sort<String>((item) => item['fecha'],
                                             columnIndex, ascending),
                                   ),
                                   DataColumn(
-                                    label: const Text('Ruta',
-                                        style: TextStyle(
-                                            fontStyle: FontStyle.italic,
-                                            fontSize: 11)),
+                                    label: Container(
+                                      width: 50,
+                                      child: const Text('Ruta',
+                                          style: TextStyle(
+                                              fontStyle: FontStyle.italic,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold)),
+                                    ),
                                     onSort: (int columnIndex, bool ascending) =>
                                         _sort<String>((item) => item['ruta_id'],
                                             columnIndex, ascending),
@@ -1027,7 +1069,9 @@ class _Vista0State extends State<Vista0> {
                                   DataColumn(
                                     label: const Text(
                                       'Acciones',
-                                      style: TextStyle(fontSize: 9),
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 ],
@@ -1035,13 +1079,21 @@ class _Vista0State extends State<Vista0> {
                                   filteredItems.length,
                                   (index) => DataRow(
                                     cells: <DataCell>[
-                                      DataCell(Text(
-                                        filteredItems[index]['id'].toString(),
-                                        style: TextStyle(fontSize: 11),
+                                      DataCell(Container(
+                                        width: 50,
+                                        //color: Colors.amber,
+                                        child: Text(
+                                          filteredItems[index]['id'].toString(),
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold),
+                                        ),
                                       )),
                                       DataCell(Text(
                                         filteredItems[index]['nombre'],
-                                        style: TextStyle(fontSize: 11),
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold),
                                       )),
                                       DataCell(Text(
                                         filteredItems[index]['distrito'],
@@ -1092,10 +1144,11 @@ class _Vista0State extends State<Vista0> {
                                                             : Colors.black),
                                       )),
                                       DataCell(Text(
-                                        filteredItems[index]['fecha'],
+                                        convertToDateOnly(filteredItems[index]['fecha']),
                                         style: TextStyle(
                                             color: getColorByDate(
                                                 filteredItems[index]['fecha']),
+                                            fontWeight: FontWeight.bold,
                                             fontSize: 9 + 2),
                                       )),
                                       DataCell(Text(
@@ -1189,7 +1242,7 @@ class _Vista0State extends State<Vista0> {
               // CONTENIDO
               Container(
                 width: MediaQuery.of(context).size.width -
-                    (MediaQuery.of(context).size.width / 2 + 10),
+                    (MediaQuery.of(context).size.width / 1.5+12),
                 height: MediaQuery.of(context).size.height,
                 color: const Color.fromARGB(255, 100, 100, 100),
                 child: Column(
@@ -1280,10 +1333,32 @@ class _Vista0State extends State<Vista0> {
                       height: 50,
                     ),
 
+                    Row(
+                      children: [
+                        Text(
+                          tiempototal > 0.0
+                              ? "Tiempo estimado de la ruta: ${tiempototal} min"
+                              : "Calculando: ${tiempototal}",
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(
+                          width: 15,
+                        ),
+                        Text(
+                          distanciatotal > 0.0
+                              ? "Distancia estimada de la ruta: ${distanciatotal} KM"
+                              : "Calculando ${distanciatotal}",
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+
                     // MAPA
                     Container(
-                      width: MediaQuery.of(context).size.width / 2,
-                      height: MediaQuery.of(context).size.height / 1.5,
+                      width: MediaQuery.of(context).size.width / 2.5,
+                      height: MediaQuery.of(context).size.height / 1.8,
                       color: Colors.white,
                       child: FlutterMap(
                         options: const MapOptions(
@@ -1305,7 +1380,7 @@ class _Vista0State extends State<Vista0> {
                                     ))
                                 .toList(),
                           ),
-                          MarkerLayer(markers: markers)
+                          MarkerLayer(markers: [...markers, ...puntopartida])
                         ],
                       ),
                     ),
