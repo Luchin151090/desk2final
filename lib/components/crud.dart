@@ -441,16 +441,11 @@ class _CrudState extends State<Crud> {
                                   TextStyle(fontSize: 18, color: Colors.white),
                             ),
                           ),
-                          Container(
-                              margin: const EdgeInsets.only(left: 20),
-                              width: 100,
-                              height: 90,
-                              child:
-                                  Lottie.asset('lib/imagenes/credencial.json')),
+                         
                           Container(
                             margin: const EdgeInsets.only(left: 20),
                             //color: Colors.grey,
-                            width: 130,
+                            width: 125,
                             height: 30,
                             child: ElevatedButton(
                                 onPressed: () {

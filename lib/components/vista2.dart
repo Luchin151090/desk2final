@@ -10,6 +10,15 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import 'dart:math';
+import 'dart:math' as math;
+
+class PolylineModel {
+  final List<LatLng> points;
+  final Color color;
+
+  PolylineModel(this.points, this.color);
+}
 
 class Pedido {
   final int id;
@@ -54,6 +63,30 @@ class Pedido {
       this.seleccionado = false});
 }
 
+class DetallePedido {
+  final int pedidoID;
+  final int productoID;
+  final String productoNombre;
+  final int cantidadProd;
+  final int? promocionID;
+  final String? promocionNombre;
+
+  const DetallePedido({
+    required this.pedidoID,
+    required this.productoID,
+    required this.productoNombre,
+    required this.cantidadProd,
+    this.promocionID,
+    this.promocionNombre,
+  });
+}
+
+extension StringExtension on String {
+  String capitalize() {
+    return "${this[0].toUpperCase()}${this.substring(1)}";
+  }
+}
+
 class Vista2 extends StatefulWidget {
   final int idRuta;
   final List<dynamic> pedidos; // Cambia el tipo de datos a lo que necesites
@@ -91,19 +124,27 @@ class _Vista2State extends State<Vista2> {
   String apipedidos = '/api/pedido';
   String apipedidoruta = '/api/pedidoruta/';
   String allrutasempleado = '/api/allrutas_empleado/';
+  String apiDetallePedido = '/api/detallepedido/';
+  LatLng coordenadaActual = LatLng(-16.4055657, -71.5719081);
+  double distanciatotal = 0.0;
+  double tiempototal = 0.0;
+  late MapController mapController;
   bool esactivo = true;
   late List<bool> isExpanded;
   List<Marker> markers = [];
+  String productosYCantidades = '';
+  List<LatLng> coordenadasgenerales = [];
+  Map<String, Marker> markersMap = {};
+  List<PolylineModel> polylines = [];
 
   /// LOS BOOLEANOS TIENEN Q SER DEL MISMO TAMAÑO DE LOS PEDIDOS
   void anadirMarcadorPorRuta() {
     int count = 1;
     if (widget.pedidos.isNotEmpty) {
-      
       for (var i = 0; i < widget.pedidos.length; i++) {
         double offset = count * 0.000005;
-        LatLng ubicacion =
-            LatLng(widget.pedidos[i].latitud+offset, widget.pedidos[i].longitud+offset);
+        LatLng ubicacion = LatLng(widget.pedidos[i].latitud + offset,
+            widget.pedidos[i].longitud + offset);
         final marker = Marker(
           width: 200.0,
           height: 200.0,
@@ -114,10 +155,16 @@ class _Vista2State extends State<Vista2> {
                   width: 80.0,
                   height: 80.0,
                   decoration: BoxDecoration(
-                      border: Border.all(width: 3,color: const Color.fromARGB(255, 29, 28, 28)),
+                      border: Border.all(
+                          width: 3,
+                          color: const Color.fromARGB(255, 29, 28, 28)),
                       borderRadius: BorderRadius.circular(50),
                       color: widget.colorRuta.withOpacity(0.5)),
-                  child: Center(child: Text("${i + 1}",style: TextStyle(fontSize: 15,fontWeight: FontWeight.bold),))),
+                  child: Center(
+                      child: Text(
+                    "${i + 1}",
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ))),
               Icon(
                 Icons.location_on_outlined,
                 color: widget.colorRuta,
@@ -164,6 +211,7 @@ class _Vista2State extends State<Vista2> {
         if (mounted) {
           setState(() {
             pedidosget = tempPedido;
+            processPedidos();
             int count = 1;
             for (var i = 0; i < pedidosget.length; i++) {
               fechaparseadas = DateTime.parse(pedidosget[i].fecha.toString());
@@ -217,6 +265,168 @@ class _Vista2State extends State<Vista2> {
       }
     } catch (e) {
       throw Exception('Error $e');
+    }
+  }
+
+  void processPedidos() {
+    DateTime now = DateTime.now();
+    int count = 1;
+    for (var pedido in pedidosget) {
+      DateTime fechaparseada = DateTime.parse(pedido.fecha.toString());
+      if ((pedido.estado == 'pendiente' || pedido.estado == 'pagado') &&
+          fechaparseada.year == now.year &&
+          fechaparseada.month == now.month &&
+          fechaparseada.day == now.day) {
+        double latitudtemp = pedido.latitud! + (0.000001 * count);
+        double longitudtemp = pedido.longitud! + (0.000001 * count);
+        LatLng tempcoord = LatLng(latitudtemp, longitudtemp);
+        coordenadasgenerales.add(tempcoord);
+        _addMarkerToMap({
+          'ruta_id': pedido.ruta_id,
+          'latitud': latitudtemp,
+          'longitud': longitudtemp,
+        });
+        count++;
+      }
+    }
+    _calculateRoute();
+  }
+
+  Future<void> _calculateRoute() async {
+    try {
+      if (coordenadasgenerales.length < 2) {
+        print('Not enough points to calculate a route');
+        return;
+      }
+
+      const int maxWaypointsPerRequest = 25;
+      List<LatLng> allRoutePoints = [];
+      List<LatLng> problematicCoordinates = [];
+
+      for (int i = 0;
+          i < coordenadasgenerales.length;
+          i += maxWaypointsPerRequest) {
+        List<LatLng> currentBatch = coordenadasgenerales.sublist(i,
+            math.min(i + maxWaypointsPerRequest, coordenadasgenerales.length));
+
+        String waypointsString = currentBatch
+            .map((point) =>
+                '${point.longitude.toStringAsFixed(6)},${point.latitude.toStringAsFixed(6)}')
+            .join(';');
+
+        final routeUrl =
+            'https://router.project-osrm.org/route/v1/driving/$waypointsString?overview=full&geometries=polyline';
+        print('Route Request URL: $routeUrl');
+
+        bool success = false;
+        int retries = 0;
+        while (!success && retries < 5) {
+          try {
+            final routeResponse = await http.get(Uri.parse(routeUrl));
+
+            if (routeResponse.statusCode == 200) {
+              final routeData = json.decode(routeResponse.body);
+              if (routeData['routes'] != null &&
+                  routeData['routes'].isNotEmpty) {
+                final route = routeData['routes'][0];
+                final encodedGeometry = route['geometry'];
+
+                // Convertir a double después de redondear a 2 decimales
+                distanciatotal = double.parse((route['distance'] / 1000)
+                    .toStringAsFixed(2)); // 1000 metros
+                tiempototal = double.parse(
+                    (route['duration'] / 60).toStringAsFixed(2)); // 60 segundos
+
+                final decodeUrl = 'http://147.182.251.164/decode-route';
+                final decodeResponse = await http.post(
+                  Uri.parse(decodeUrl),
+                  headers: {'Content-Type': 'application/json'},
+                  body: json.encode({'encodedPath': encodedGeometry}),
+                );
+
+                if (decodeResponse.statusCode == 200) {
+                  final decodeData = json.decode(decodeResponse.body);
+                  final decodedPoints = (decodeData['decodedPath'] as List)
+                      .map((point) =>
+                          LatLng(point[0].toDouble(), point[1].toDouble()))
+                      .toList();
+
+                  allRoutePoints.addAll(decodedPoints);
+                  success = true;
+                } else {
+                  throw Exception(
+                      'Failed to decode route: ${decodeResponse.statusCode}');
+                }
+              }
+            } else if (routeResponse.statusCode == 400) {
+              print('Bad request for batch: $waypointsString');
+              problematicCoordinates.addAll(currentBatch);
+              break;
+            } else if (routeResponse.statusCode == 429) {
+              retries++;
+              int waitTime = math.pow(2, retries).toInt() * 1000;
+              print('Rate limited. Retrying in $waitTime ms...');
+              await Future.delayed(Duration(milliseconds: waitTime));
+            } else {
+              throw Exception(
+                  'Failed to load route: ${routeResponse.statusCode}');
+            }
+          } catch (e) {
+            retries++;
+            print('Error on attempt $retries: $e');
+            if (retries >= 5) throw e;
+            await Future.delayed(Duration(seconds: retries));
+          }
+        }
+
+        await Future.delayed(Duration(milliseconds: 500));
+      }
+
+      if (allRoutePoints.isNotEmpty) {
+        setState(() {
+          polylines = [PolylineModel(allRoutePoints, Colors.purple)];
+        });
+
+        if (problematicCoordinates.isNotEmpty) {
+          print('Warning: Some coordinates were skipped due to errors:');
+          problematicCoordinates.forEach((coord) => print(coord));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Warning: Some coordinates were skipped. Check logs for details.')),
+          );
+        }
+      } else {
+        throw Exception('No valid points in the route');
+      }
+    } catch (e) {
+      print('Error calculating route: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to calculate route: $e')),
+      );
+    }
+  }
+
+  void _addMarkerToMap(Map<String, dynamic> item) {
+    final double? latitud = item['latitud'];
+    final double? longitud = item['longitud'];
+    if (latitud != null && longitud != null) {
+      final latLng = LatLng(latitud, longitud);
+      final marker = Marker(
+        width: 80.0,
+        height: 80.0,
+        point: latLng,
+        child: Icon(
+          Icons.location_on_outlined,
+          color: Color.fromARGB(255, 85, 31, 172),
+          size: 50.0,
+        ),
+      );
+
+      setState(() {
+        markersMap[item['ruta_id'].toString()] = marker;
+        markers.add(marker);
+      });
     }
   }
 
@@ -420,7 +630,43 @@ class _Vista2State extends State<Vista2> {
     connectToServer();
     getPedidos();
     anadirMarcadorPorRuta();
+    mapController = MapController();
     // getallrutasempleado();
+  }
+
+  Future<void> getDetalleXUnPedido(int pedidoID) async {
+    if (pedidoID != 0) {
+      var res = await http.get(
+        Uri.parse(api + apiDetallePedido + pedidoID.toString()),
+        headers: {"Content-type": "application/json"},
+      );
+      try {
+        if (res.statusCode == 200) {
+          var data = json.decode(res.body);
+          List<DetallePedido> listTemporal = data.map<DetallePedido>((mapa) {
+            return DetallePedido(
+              pedidoID: mapa['pedido_id'],
+              productoID: mapa['producto_id'],
+              productoNombre: mapa['nombre_prod'],
+              cantidadProd: mapa['cantidad'],
+              promocionID: mapa['promocion_id'],
+              promocionNombre: mapa['nombre_prom'],
+            );
+          }).toList();
+
+          setState(() {
+            productosYCantidades = '';
+            for (var detalle in listTemporal) {
+              var salto = productosYCantidades.isEmpty ? '' : '\n';
+              productosYCantidades +=
+                  "$salto${detalle.productoNombre.capitalize()} x ${detalle.cantidadProd} uds.";
+            }
+          });
+        }
+      } catch (e) {
+        throw Exception('Error en la solicitud: $e');
+      }
+    }
   }
 
   @override
@@ -477,18 +723,25 @@ class _Vista2State extends State<Vista2> {
                         color: widget.colorRuta,
                         child: Center(
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                                          "Ruta: ${widget.idRuta}",
-                                                          style: TextStyle(
-                                  color: Colors.white, fontWeight: FontWeight.bold),
-                                                        ),
-                                                        const SizedBox(width: 10,),
-                                                        Text("Pedidos: ${widget.pedidos.length}",style: TextStyle(
-                                  color: Colors.white, fontWeight: FontWeight.bold),)
-                              ],
-                            )),
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Ruta: ${widget.idRuta}",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(
+                              width: 10,
+                            ),
+                            Text(
+                              "Pedidos: ${widget.pedidos.length}",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
+                            )
+                          ],
+                        )),
                       ),
                       Container(
                         width: MediaQuery.of(context).size.width / 5.5,
@@ -553,10 +806,11 @@ class _Vista2State extends State<Vista2> {
                                               IconButton(
                                                 onPressed: () {
                                                   setState(() {
-                                                    if (index <
-                                                        isExpanded.length) {
-                                                      isExpanded[index] =
-                                                          !isExpanded[index];
+                                                    if (index < isExpanded.length) {
+                                                      isExpanded[index] = !isExpanded[index];
+                                                      print("-----index--------");
+                                                      print(index);
+                                                      getDetalleXUnPedido(widget.pedidos[index].id);
                                                     }
                                                   });
                                                 },
@@ -597,6 +851,11 @@ class _Vista2State extends State<Vista2> {
                                                   style: const TextStyle(
                                                       color: Colors.white),
                                                 ),
+                                                Text(
+                                                  productosYCantidades,
+                                                  style: TextStyle(
+                                                      color: Colors.white),
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -635,6 +894,15 @@ class _Vista2State extends State<Vista2> {
                         urlTemplate:
                             'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.example.app',
+                      ),
+                      PolylineLayer(
+                        polylines: polylines
+                            .map((polylineModel) => Polyline(
+                                  points: polylineModel.points,
+                                  color: polylineModel.color,
+                                  strokeWidth: 4.0,
+                                ))
+                            .toList(),
                       ),
                       MarkerLayer(markers: markers)
                     ],
@@ -706,6 +974,7 @@ class _Vista2State extends State<Vista2> {
                                         style: const TextStyle(
                                             color: Colors.white),
                                       ),
+
                                       Text("Fechas: ${hoyexpress[index].fecha}")
                                     ],
                                   ),

@@ -1337,21 +1337,23 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
                       children: [
                         Text(
                           tiempototal > 0.0
-                              ? "Tiempo estimado de la ruta: ${tiempototal} min"
+                              ? "Tiempo estimado: ${tiempototal} min"
                               : "Calculando: ${tiempototal}",
                           style: TextStyle(
                               color: Colors.white, fontWeight: FontWeight.bold),
                         ),
+                        Icon(Icons.timer_outlined),
                         const SizedBox(
                           width: 15,
                         ),
                         Text(
                           distanciatotal > 0.0
-                              ? "Distancia estimada de la ruta: ${distanciatotal} KM"
+                              ? "Distancia: ${distanciatotal} KM"
                               : "Calculando ${distanciatotal}",
                           style: TextStyle(
                               color: Colors.white, fontWeight: FontWeight.bold),
                         ),
+                        Icon(Icons.directions)
                       ],
                     ),
 
