@@ -1047,13 +1047,14 @@ class _Vista0State extends State<Vista0> {
           child: Row(
             //mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // BARRA LATERAL
+              // BARRA LATERAL - PEDIDOS
               Container(
-                width: MediaQuery.of(context).size.width / 3,
+                width: MediaQuery.of(context).size.width / 2.5,
                 height: MediaQuery.of(context).size.height,
                 color: Colors.white,
                 child: Column(
                   children: [
+                    
                     Container(
                         width: MediaQuery.of(context).size.width / 3,
                         height: MediaQuery.of(context).size.height / 10,
@@ -1070,7 +1071,13 @@ class _Vista0State extends State<Vista0> {
                                   color: Colors.white),
                             ),
                             Container(
-                              color: const Color.fromARGB(255, 50, 50, 50),
+                              height: 50,
+                              width: 50,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(50),
+                                color: const Color.fromARGB(255, 33, 61, 243)
+                              ),
+                              //color: const Color.fromARGB(255, 50, 50, 50),
                               child: IconButton(
                                   onPressed: () {
                                     fetchPedidos();
@@ -1502,20 +1509,37 @@ class _Vista0State extends State<Vista0> {
 
               // NUEVA COLUMNA - CONDUCTORES
               Container(
-                width: MediaQuery.of(context).size.width / 3,
+                width: MediaQuery.of(context).size.width / 3.5,
                 height: MediaQuery.of(context).size.height,
-                color: const Color.fromARGB(255, 200, 200,
-                    200), // Change background color for distinction
+                color: Color.fromARGB(255, 255, 255, 255), // Change background color for distinction
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Container(
+                        width: MediaQuery.of(context).size.width / 3,
+                        height: MediaQuery.of(context).size.height / 10,
+                        color: const Color.fromARGB(255, 40, 49, 148),
+                        child: Center(
+                            child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              "Conductores",
+                              style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                            ),
+                           
+                          ],
+                        ))),
+                    /*const Text(
                       "Conductores",
                       style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.black),
-                    ),
+                    ),*/
                     // Add a DropdownButton or other widgets for this section
 
                     Expanded(
@@ -1560,66 +1584,20 @@ class _Vista0State extends State<Vista0> {
 
               // CONTENIDO
               Container(
-                  width: MediaQuery.of(context).size.width / 3, //-
+                  width: MediaQuery.of(context).size.width / 3.5, //-
                   //(MediaQuery.of(context).size.width / 3),
                   height: MediaQuery.of(context).size.height,
-                  color: const Color.fromARGB(255, 100, 100, 100),
+                  color: Color.fromARGB(255, 255, 255, 255),
                   child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            /*
-                            Container(
-                              width: MediaQuery.of(context).size.width / 10,
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10)),
-                              child: DropdownButton(
-                                hint: const Text('Conductores'),
-                                value: selectedConductor,
-                                items: conductorget.map((Conductor chofer) {
-                                  return DropdownMenuItem<Conductor>(
-                                    value: chofer,
-                                    child: Text("${chofer.nombres}"),
-                                  );
-                                }).toList(),
-                                onChanged: (Conductor? newValue) {
-                                  setState(() {
-                                    selectedConductor = newValue;
-                                  });
-                                },
-                              ),
-                            ),
-*/
-                            /*
-                            Container(
-                                width: MediaQuery.of(context).size.width / 10,
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                    color: Color.fromARGB(255, 89, 90, 95),
-                                    borderRadius: BorderRadius.circular(10)),
-                                child: DropdownButton(
-                                  hint: const Text('Vehículos'),
-                                  value: selectedVehiculo,
-                                  items: vehiculos.map((Vehiculo auto) {
-                                    return DropdownMenuItem<Vehiculo>(
-                                      value: auto,
-                                      child: Text("${auto.nombre_modelo}"),
-                                    );
-                                  }).toList(),
-                                  onChanged: (Vehiculo? newValue) {
-                                    setState(() {
-                                      selectedVehiculo = newValue;
-                                    });
-                                  },
-                                )),
-                            */
+                            
 
                             Container(
-                              width: MediaQuery.of(context).size.width / 10,
+                              width: MediaQuery.of(context).size.width / 3.5,
                               height: MediaQuery.of(context).size.height / 12,
                               padding: EdgeInsets.all(8),
                               decoration: BoxDecoration(
@@ -1641,7 +1619,7 @@ class _Vista0State extends State<Vista0> {
                                   child: const Row(
                                     children: [
                                       Text(
-                                        "Rutas",
+                                        "Ver rutas",
                                         style: TextStyle(
                                             color: Colors.white, fontSize: 20),
                                       ),
@@ -1655,29 +1633,53 @@ class _Vista0State extends State<Vista0> {
                           ],
                         ),
                         const SizedBox(
-                          height: 50,
+                          height: 30,
                         ),
 
-                        Row(
+                        Column(
                           children: [
-                            Text(
-                              tiempototal > 0.0
-                                  ? "Tiempo estimado de la ruta: ${tiempototal} min"
-                                  : "Calculando: ${tiempototal}",
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(
+                            Row(
+                              children: [
+                                Container(width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: Colors.amber,
+                                  borderRadius: BorderRadius.circular(50)
+                                ),),
+                                 const SizedBox(
                               width: 15,
                             ),
-                            Text(
-                              distanciatotal > 0.0
-                                  ? "Distancia estimada de la ruta: ${distanciatotal} KM"
-                                  : "Calculando ${distanciatotal}",
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
+                                Text(
+                                  tiempototal > 0.0
+                                      ? "Tiempo : ${tiempototal} min"
+                                      : "Esperando tiempo: ${tiempototal}",
+                                  style:const  TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            
+                            Row(
+                              children: [
+                                Container(width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: const Color.fromARGB(255, 44, 33, 243),
+                                  borderRadius: BorderRadius.circular(50)
+                                ),),
+                                const SizedBox(
+                              width: 15,
+                            ),
+                                Text(
+                                  distanciatotal > 0.0
+                                      ? "Distancia : ${distanciatotal} KM"
+                                      : "Esperando distancia ${distanciatotal}",
+                                  style:const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -1782,7 +1784,7 @@ class _Vista0State extends State<Vista0> {
                         ),*/
                         SizedBox(height: 16),
                         Container(
-                          width: MediaQuery.of(context).size.width / 2,
+                          width: MediaQuery.of(context).size.width / 3,
                           child: ElevatedButton(
                             onPressed: idPedidosSeleccionados.isNotEmpty
                                 ? () async {
