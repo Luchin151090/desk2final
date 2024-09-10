@@ -634,7 +634,7 @@ class _TiendaState extends State<Tienda> {
         headers: {"Content-type": "application/json"},
         body: jsonEncode({
           "cliente_nr_id": clienteNrId,
-          "subtotal": montoTotal.toDouble(),
+          "subtotal": (montoTotal + descuento).toDouble(),
           "descuento": descuento,
           "total": montoTotal.toDouble(),
           "fecha": formattedDate,
@@ -658,7 +658,7 @@ class _TiendaState extends State<Tienda> {
 
   @override
   void initState() {
-    getTemperature();
+    // getTemperature();
     getProducts();
     getPromos();
     super.initState();
@@ -719,7 +719,7 @@ class _TiendaState extends State<Tienda> {
           children: [
             // formulario
             Container(
-             // color: Colors.green,
+              // color: Colors.green,
               width: MediaQuery.of(context).size.width / 5.2,
               height: MediaQuery.of(context).size.height /
                   1.1, // <= 800 ? 500 : 800,
@@ -1045,7 +1045,7 @@ class _TiendaState extends State<Tienda> {
                                 ),
                                 items: <String>[
                                   'pendiente',
-                                  'pagado'
+                                  //'pagado'
                                 ].map<DropdownMenuItem<String>>((String value) {
                                   return DropdownMenuItem<String>(
                                     value: value,
@@ -1225,12 +1225,11 @@ class _TiendaState extends State<Tienda> {
                                             // CANTIDAD
                                             TextFormField(
                                               controller: producto.cantidad,
-                                              keyboardType: const TextInputType
-                                                  .numberWithOptions(
-                                                  decimal: true),
+                                              keyboardType:
+                                                  TextInputType.number,
                                               inputFormatters: [
                                                 FilteringTextInputFormatter
-                                                    .allow(RegExp(r'^\d+'))
+                                                    .digitsOnly,
                                               ],
                                               decoration: InputDecoration(
                                                 filled: true,
@@ -1249,6 +1248,7 @@ class _TiendaState extends State<Tienda> {
                                                     fontSize: 12),
                                               ),
                                               onChanged: (value) {
+                                                producto.cantidad.text = value;
                                                 /* print(
                                                                 "valor detectado: $value");
                                                             print(
@@ -1264,10 +1264,20 @@ class _TiendaState extends State<Tienda> {
                                                             .cantidadInt =
                                                         int.parse(value);
                                                     listElementos[index].monto =
-                                                        int.parse(value) *
+                                                        listElementos[index]
+                                                                .cantidadInt *
                                                             listElementos[index]
                                                                 .precio;
                                                   });
+                                                  producto.cantidad.selection =
+                                                      TextSelection
+                                                          .fromPosition(
+                                                    TextPosition(
+                                                        offset: producto
+                                                            .cantidad
+                                                            .text
+                                                            .length),
+                                                  );
                                                 }
                                               },
                                               style:
@@ -1306,23 +1316,26 @@ class _TiendaState extends State<Tienda> {
                                                 /*print(
                                                                 "0.1) descuento detectado: $value");*/
                                                 // SETEAR DE LA LISTA MIXTA(PROD Y PROMO)
-                                                listElementos[index]
-                                                    .descuento
-                                                    .text = value;
+                                                setState(() {
+                                                  listElementos[index]
+                                                      .descuento
+                                                      .text = value;
+                                                });
+
                                                 if (value.isNotEmpty) {
-                                                  setState(() {
-                                                    listElementos[index]
-                                                            .descuentoDouble =
-                                                        int.parse(value)
-                                                            .toDouble();
-                                                    listElementos[index].monto =
-                                                        listElementos[index]
-                                                                .precio *
-                                                            listElementos[index]
-                                                                .cantidadInt;
-                                                    /* print(
+                                                  //setState(() {
+                                                  listElementos[index]
+                                                          .descuentoDouble =
+                                                      int.parse(value)
+                                                          .toDouble();
+                                                  listElementos[index].monto =
+                                                      listElementos[index]
+                                                              .precio *
+                                                          listElementos[index]
+                                                              .cantidadInt;
+                                                  /* print(
                                                                     '0.2) este es el descuento: ${listElementos[index].descuentoDouble}');*/
-                                                  });
+                                                  //});
                                                 } else {
                                                   /*print(
                                                                   '0.3) no hay descuento');*/
@@ -1339,10 +1352,21 @@ class _TiendaState extends State<Tienda> {
                                                   });
                                                 }
 
-                                                listElementos[index].monto =
-                                                    listElementos[index].monto -
-                                                        listElementos[index]
-                                                            .descuentoDouble;
+                                                setState(() {
+                                                  listElementos[index].monto =
+                                                      listElementos[index]
+                                                              .monto -
+                                                          listElementos[index]
+                                                              .descuentoDouble;
+                                                });
+
+                                                producto.descuento.selection =
+                                                    TextSelection.fromPosition(
+                                                        TextPosition(
+                                                            offset: producto
+                                                                .descuento
+                                                                .text
+                                                                .length));
                                                 /* print(
                                                                 '0.5) este es el monto con descuento: ${listElementos[index].monto}');*/
                                               },
@@ -1431,6 +1455,8 @@ class _TiendaState extends State<Tienda> {
                                                                         TextFormField(
                                                                           controller:
                                                                               producto.nombreAutorizador,
+                                                                          keyboardType:
+                                                                              TextInputType.name,
                                                                           style:
                                                                               const TextStyle(
                                                                             fontSize:
@@ -1444,7 +1470,7 @@ class _TiendaState extends State<Tienda> {
                                                                                 75),
                                                                           ),
                                                                           decoration:
-                                                                              const InputDecoration(
+                                                                              InputDecoration(
                                                                             filled:
                                                                                 true,
                                                                             fillColor:
@@ -1464,11 +1490,15 @@ class _TiendaState extends State<Tienda> {
                                                                             setState(() {
                                                                               listElementos[index].nombreAutorizador.text = value;
                                                                             });
+                                                                            producto.nombreAutorizador.selection =
+                                                                                TextSelection.fromPosition(TextPosition(offset: producto.nombreAutorizador.text.length));
                                                                           },
                                                                         ),
                                                                         TextFormField(
                                                                           controller:
                                                                               producto.cargoAutorizador,
+                                                                          keyboardType:
+                                                                              TextInputType.name,
                                                                           style:
                                                                               const TextStyle(
                                                                             fontSize:
@@ -1502,6 +1532,8 @@ class _TiendaState extends State<Tienda> {
                                                                             setState(() {
                                                                               listElementos[index].cargoAutorizador.text = value;
                                                                             });
+                                                                            producto.cargoAutorizador.selection =
+                                                                                TextSelection.fromPosition(TextPosition(offset: producto.cargoAutorizador.text.length));
                                                                           },
                                                                         ),
                                                                         const SizedBox(
@@ -1997,7 +2029,7 @@ class _TiendaState extends State<Tienda> {
 
             // ubicacion
             Container(
-               //color: Colors.red,
+              //color: Colors.red,
               height: MediaQuery.of(context).size.height / 1,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -2062,7 +2094,8 @@ class _TiendaState extends State<Tienda> {
                             Color.fromARGB(255, 173, 166, 109))),
                     child: const Text(
                       'Registrar Pedido',
-                      style: TextStyle(color: Color.fromARGB(255, 0, 0, 0), fontSize: 15),
+                      style: TextStyle(
+                          color: Color.fromARGB(255, 0, 0, 0), fontSize: 15),
                     ),
                   )),
 
@@ -2115,7 +2148,6 @@ class _TiendaState extends State<Tienda> {
                 ],
               ),
             )
-            
           ],
         ),
       ),

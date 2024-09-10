@@ -1,5 +1,7 @@
+import 'package:desktop2/components/centralsocket/socketcentral.dart';
 import 'package:desktop2/components/colors.dart';
 import 'package:desktop2/components/provider/user_provider.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:desktop2/components/vista1.dart';
 import 'package:desktop2/components/vista2.dart';
 import 'package:desktop2/components/widget_table.dart';
@@ -41,17 +43,22 @@ class Conductor {
   final String licencia;
   final String dni;
   final String fecha_nacimiento;
+  String? estado;
+  bool isSelected;
 
   bool seleccionado; // Nuevo campo para rastrear la selección
 
-  Conductor(
-      {required this.id,
-      required this.nombres,
-      required this.apellidos,
-      required this.licencia,
-      required this.dni,
-      required this.fecha_nacimiento,
-      this.seleccionado = false});
+  Conductor({
+    required this.id,
+    required this.nombres,
+    required this.apellidos,
+    required this.licencia,
+    required this.dni,
+    required this.fecha_nacimiento,
+    required this.estado,
+    this.seleccionado = false,
+    this.isSelected = false,
+  });
 }
 
 class PolylineModel {
@@ -70,9 +77,10 @@ class Vista0 extends StatefulWidget {
 class _Vista0State extends State<Vista0> {
   String api = dotenv.env['API_URL'] ?? '';
   String apipedidos = '/api/pedido';
-  String conductores = '/api/user_conductor';
+  String conductores = '/api/user_conductores';
   String apiRutaCrear = '/api/ruta';
-  String apiLastRuta = '/api/rutalast';
+  String apiLastRuta = '/api/rutalastAll';
+  String apiLastRutaPublica = '/api/rutalastAll';
   String apiUpdateRuta = '/api/pedidoruta';
   String apiEmpleadoPedidos = '/api/empleadopedido/';
   String apiVehiculos = '/api/vehiculo/';
@@ -82,6 +90,7 @@ class _Vista0State extends State<Vista0> {
   Conductor? selectedConductor;
   Vehiculo? selectedVehiculo;
   List<Conductor> conductorget = [];
+  List<int> selectedConductorIds = [];
   List<Vehiculo> vehiculos = [];
   int rutaIdLast = 0;
   int idempleado = 0;
@@ -104,7 +113,7 @@ class _Vista0State extends State<Vista0> {
   double distanciatotal = 0.0;
   double tiempototal = 0.0;
   List<Marker> puntopartida = [];
-
+  late IO.Socket socket;
 
   String convertToDateOnly(String dateTimeString) {
     // Convertir la cadena de entrada a un objeto DateTime
@@ -116,8 +125,116 @@ class _Vista0State extends State<Vista0> {
     return formattedDate;
   }
 
-  Future<dynamic> createRuta(
-      empleado_id, conductor_id, vehiculo_id, distancia, tiempo) async {
+  Future<void> crearObtenerYActualizarRutaPublica(
+      double distancia, int tiempo, String estado) async {
+    await createRutaPublica(distancia, tiempo);
+    await lastRutaPublica();
+    await updatePedidoRuta(rutaIdLastPublica, estado);
+    setState(() {});
+  }
+
+  Future<dynamic> createRutaPublica(double distancia, int tiempo) async {
+    try {
+      DateTime now = DateTime.now();
+      String formateDateTime = now.toString();
+
+      await http.post(
+        Uri.parse(api + apiRutaCrear),
+        headers: {"Content-type": "application/json"},
+        body: jsonEncode({
+          "distancia_km": distancia,
+          "tiempo_ruta": tiempo,
+          "fecha_creacion": formateDateTime
+          //"es_publica": true
+        }),
+      );
+
+      print("Ruta pública creada");
+    } catch (e) {
+      throw Exception("$e");
+    }
+  }
+
+  int rutaIdLastPublica = 0;
+
+  Future<dynamic> lastRutaPublica() async {
+    var res = await http.get(
+      Uri.parse(api + apiLastRutaPublica),
+      headers: {"Content-type": "application/json"},
+    );
+
+    setState(() {
+      rutaIdLastPublica = json.decode(res.body)['id'] ?? 0;
+    });
+  }
+
+  void initSocket() {
+    print('Iniciando conexión Socket.IO...');
+    socket = IO.io(api, <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': true,
+    });
+
+    socket.onConnect((_) {
+      print('Conectado al servidor Socket.IO');
+    });
+
+    socket.on('connect_error', (error) {
+      print('Error de conexión: $error');
+    });
+
+    socket.on('Termine de Updatear', (data) {
+      print('Recibido evento "Termine de Updatear":');
+      print('Datos recibidos: $data');
+      // Aquí solo imprimimos el mensaje, sin realizar ninguna actualización
+      print(data['id']);
+      print(data['estado']);
+      print("....");
+    });
+
+/*"id": 4,
+	"ruta_id": 16,
+	"cliente_id": null,
+	"cliente_nr_id": 3,
+	"subtotal": 305,
+	"descuento": 0,
+	"total": 305,
+	"fecha": "2024-08-29T05:00:00.000Z",
+	"tipo": "normal",
+	"foto": null,
+	"estado": "anulado",
+	"observacion": null,
+	"tipo_pago": "Plin",
+	"beneficiado_id": null,
+	"ubicacion_id": 6 */
+
+    socket.on('pedidoanulado', (data) {
+      print('Recibido evento "Termine de Updatear":');
+      print('Datos recibidos: $data');
+      // Aquí solo imprimimos el mensaje, sin realizar ninguna actualización
+      print(data['id']);
+      print(data['cliente_id']);
+      print(data['ruta_id']);
+      print(data['cliente_nr_id']);
+      print(data['subtotal']);
+      print(data['descuento']);
+      print(data['total']);
+      print(data['fecha']);
+      print(data['tipo']);
+      print(data['foto']);
+      print(data['estado']);
+      print(data['observacion']);
+      print(data['tipo_pago']);
+      print(data['beneficiado_id']);
+      print(data['ubicacion_id']);
+      print("....");
+    });
+
+    socket.onDisconnect((_) => print('Desconectado del servidor Socket.IO'));
+  }
+
+  //Este es el Metodo de Ruta Especifica
+  Future<dynamic> createRuta(conductor_id, distancia, tiempo) async {
     try {
       //    print("Create ruta....");
       //print("conductor ID");
@@ -133,8 +250,6 @@ class _Vista0State extends State<Vista0> {
           headers: {"Content-type": "application/json"},
           body: jsonEncode({
             "conductor_id": conductor_id,
-            "vehiculo_id": vehiculo_id,
-            "empleado_id": empleado_id,
             "distancia_km": 0,
             "tiempo_ruta": 0,
             "fecha_creacion": formateDateTime
@@ -146,9 +261,8 @@ class _Vista0State extends State<Vista0> {
     }
   }
 
-  Future<dynamic> lastRutaEmpleado(empleadoId) async {
-    var res = await http.get(
-        Uri.parse(api + apiLastRuta + '/' + empleadoId.toString()),
+  Future<dynamic> lastRutaEmpleado() async {
+    var res = await http.get(Uri.parse(api + apiLastRuta),
         headers: {"Content-type": "application/json"});
 
     setState(() {
@@ -156,6 +270,22 @@ class _Vista0State extends State<Vista0> {
     });
     //  print("LAST RUTA EMPLEAD");
     //print(rutaIdLast);
+  }
+
+  Future<void> updatePedidoRutaEspecifico(
+      int pedidoId, int ruta_id, String estado) async {
+    try {
+      await http.put(Uri.parse(api + apiUpdateRuta + '/' + pedidoId.toString()),
+          headers: {"Content-type": "application/json"},
+          body: jsonEncode({"ruta_id": ruta_id, "estado": estado}));
+    } catch (error) {
+      throw Exception("$error");
+    }
+  }
+
+  Future<void> _updateAndRefresh(int pedidoId) async {
+    await lastRutaPublica();
+    await updatePedidoRutaEspecifico(pedidoId, rutaIdLastPublica, 'pendiente');
   }
 
   Future<dynamic> updatePedidoRuta(int ruta_id, String estado) async {
@@ -180,27 +310,16 @@ class _Vista0State extends State<Vista0> {
   }
 
   Future<void> crearobtenerYactualizarRuta(
-      empleadoId, conductorid, vehiculoid, distancia, tiempo, estado) async {
+      conductorid, distancia, tiempo, estado) async {
     // print("entro");
-    await createRuta(empleadoId, conductorid, vehiculoid, distancia, tiempo);
-    await lastRutaEmpleado(empleadoId);
+    await createRuta(conductorid, distancia, tiempo);
+    await lastRutaEmpleado();
     await updatePedidoRuta(rutaIdLast, estado);
+    print('Creating/updating route for conductor ID: $conductorid');
     setState(() {});
     //socket.emit('Termine de Updatear', 'si');
   }
 
-// ENDPOINT PARA CALCULAR LA RUTA
-/*void _fitBounds() {
-    if (polylines.isNotEmpty && polylines[0].points.isNotEmpty) {
-      final bounds = LatLngBounds.fromPoints(polylines[0].points);
-      mapController.fitCamera(
-        CameraFit.bounds(
-          bounds: bounds,
-          padding: const EdgeInsets.all(50.0),
-        ),
-      );
-    }
-  }*/
   Future<void> _calculateRoute() async {
     try {
       if (coordenadasgenerales.length < 2) {
@@ -240,10 +359,11 @@ class _Vista0State extends State<Vista0> {
                 final route = routeData['routes'][0];
                 final encodedGeometry = route['geometry'];
 
-              // Convertir a double después de redondear a 2 decimales
-distanciatotal = double.parse((route['distance'] / 1000).toStringAsFixed(2)); // 1000 metros
-tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 segundos
-
+                // Convertir a double después de redondear a 2 decimales
+                distanciatotal = double.parse((route['distance'] / 1000)
+                    .toStringAsFixed(2)); // 1000 metros
+                tiempototal = double.parse(
+                    (route['duration'] / 60).toStringAsFixed(2)); // 60 segundos
 
                 final decodeUrl = 'http://147.182.251.164/decode-route';
                 final decodeResponse = await http.post(
@@ -413,11 +533,10 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
   }
 
   Future<void> fetchPedidos() async {
-    SharedPreferences empleadoShare = await SharedPreferences.getInstance();
+    //SharedPreferences empleadoShare = await SharedPreferences.getInstance();
 
-    var empleadoIDs = empleadoShare.getInt('empleadoID');
-    final response = await http.get(
-        Uri.parse(api + '/api/pedidoDesktop/' + empleadoIDs.toString()),
+    //var empleadoIDs = empleadoShare.getInt('empleadoID');
+    final response = await http.get(Uri.parse(api + '/api/pedidosDesktop'),
         headers: {"Content-type": "application/json"});
     if (response.statusCode == 200) {
       setState(() {
@@ -574,21 +693,22 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
     }
   }
 
-  Future<void> deletePedido(int pedidoId, String motivo) async {
+  Future<void> deletePedido(int pedidoId) async {
     final response = await http.delete(
-      Uri.parse(api + '/api/revertirpedidocan/$pedidoId'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({"motivoped": motivo}),
-    );
+        Uri.parse(api + '/api/revertirpedido/$pedidoId'),
+        headers: {'Content-Type': 'application/json'});
 
     if (response.statusCode == 200) {
       print('Pedido eliminado correctamente');
       fetchPedidos(); // Refresh data after delete
+    } else if (response.statusCode == 400) {
+      print('error 400 Pedido');
     } else {
       throw Exception('Failed to delete pedido');
     }
   }
 
+/*
   void _deletePedido(int index) {
     TextEditingController observacionController = TextEditingController();
 
@@ -637,6 +757,7 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
       },
     );
   }
+  */
 
   Future<dynamic> getVehiculos() async {
     //SharedPreferences empleadoShare = await SharedPreferences.getInstance();
@@ -677,23 +798,24 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
   Future<dynamic> getConductores() async {
     try {
       // SharedPreferences empleadoShare = await SharedPreferences.getInstance();
-      var empleadoIDs = 1; //empleadoShare.getInt('empleadoID');
+      //var empleadoIDs = 1; //empleadoShare.getInt('empleadoID');
       /*print("El empleado traido es");
       print(empleadoIDs);*/
-      var res = await http.get(
-          Uri.parse(api + conductores + '/' + empleadoIDs.toString()),
+      var res = await http.get(Uri.parse(api + conductores),
           headers: {"Content-type": "application/json"});
 
       if (res.statusCode == 200) {
         var data = json.decode(res.body);
         List<Conductor> tempConductor = data.map<Conductor>((data) {
           return Conductor(
-              id: data['id'],
-              nombres: data['nombres'],
-              apellidos: data['apellidos'],
-              licencia: data['licencia'],
-              dni: data['dni'],
-              fecha_nacimiento: data['fecha_nacimiento']);
+            id: data['id'],
+            nombres: data['nombres'],
+            apellidos: data['apellidos'],
+            licencia: data['licencia'],
+            dni: data['dni'],
+            fecha_nacimiento: data['fecha_nacimiento'],
+            estado: data['estado'],
+          );
         }).toList();
         if (mounted) {
           setState(() {
@@ -704,6 +826,17 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
     } catch (e) {
       throw Exception('$e');
     }
+  }
+
+  void _onConductorSelected(bool? selected, int conductorId) {
+    setState(() {
+      if (selected == true) {
+        selectedConductorIds = [conductorId];
+      } else {
+        selectedConductorIds.remove(conductorId);
+      }
+    });
+    print('Selected Conductor IDs: $selectedConductorIds');
   }
 
   Color getColorByDate(String fecha) {
@@ -775,6 +908,80 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
   @override
   void initState() {
     super.initState();
+    //initSocket();
+
+    // socket
+    final socketService = SocketService();
+    socketService.listenToEvent('Termine de Updatear', (data) async {
+      print("Datos recibidos: $data");
+      if (data != null &&
+          data.containsKey('id') &&
+          data.containsKey('estado')) {
+        print(
+            "Datos válidos recibidos: ID=${data['id']}, Estado=${data['estado']}");
+        setState(() {
+          conductorget.forEach((conductor) {
+            print("Revisando conductor con ID=${conductor.id}");
+            if (conductor.id == data['id']) {
+              print(
+                  "Actualizando estado del conductor con ID=${conductor.id} a ${data['estado']}");
+              conductor.estado = data['estado'];
+            }
+          });
+        });
+      }
+      print(".... entre ");
+    });
+    socketService.listenToEvent('pedidoanulado', (data) async {
+      print("Datos Recibidos: $data");
+      if (data != null &&
+          data.containsKey('id') &&
+          data.containsKey('estado') &&
+          data.containsKey('tipo') &&
+          data.containsKey('fecha') &&
+          data.containsKey('ruta_id')) {
+        print(
+            "Datos válidos recibidos: ID=${data['id']}, Estado=${data['estado']}");
+
+        bool itemFound = false;
+        int itemIndex = -1;
+
+        for (int i = 0; i < filteredItems.length; i++) {
+          if (filteredItems[i]['id'] == data['id']) {
+            itemFound = true;
+            itemIndex = i;
+            break;
+          }
+        }
+
+        if (itemFound) {
+          setState(() {
+            print(
+                "Actualizando item con ID=${filteredItems[itemIndex]['id']} a ${data['estado']}");
+            filteredItems[itemIndex]['estado'] = data['estado'];
+            filteredItems[itemIndex]['tipo'] = data['tipo'];
+            filteredItems[itemIndex]['fecha'] = data['fecha'];
+            filteredItems[itemIndex]['ruta_id'] = data['ruta_id'];
+          });
+
+          // Verificar si los cambios se aplicaron
+          print(
+              "Estado después de actualizar: ${filteredItems[itemIndex]['estado']}");
+          print(
+              "Tipo después de actualizar: ${filteredItems[itemIndex]['tipo']}");
+          print(
+              "Fecha después de actualizar: ${filteredItems[itemIndex]['fecha']}");
+          print(
+              "Ruta ID después de actualizar: ${filteredItems[itemIndex]['ruta_id']}");
+        } else {
+          print("No se encontró ningún item con ID=${data['id']}");
+        }
+      } else {
+        print("Datos recibidos no válidos o incompletos");
+      }
+    });
+    //// fin
+
     //getPedidos();
     if (coordenadasgenerales.isEmpty) {
       _determinePosition();
@@ -792,13 +999,17 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
 
   @override
   void dispose() {
+    print('Desconectando Socket.IO...');
+    socket.disconnect();
+    socket.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = context.watch<UserProvider>();
-    idempleado = userProvider.user!.id;
+    //final userProvider = context.watch<UserProvider>();
+    //idempleado = 1;
+    //userProvider.user!.id;
     return Scaffold(
         appBar: AppBar(
           iconTheme: const IconThemeData(color: Colors.white),
@@ -834,17 +1045,17 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height / 1,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            //mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // BARRA LATERAL
               Container(
-                width: MediaQuery.of(context).size.width / 1.5,
+                width: MediaQuery.of(context).size.width / 3,
                 height: MediaQuery.of(context).size.height,
                 color: Colors.white,
                 child: Column(
                   children: [
                     Container(
-                        width: MediaQuery.of(context).size.width / 1.5,
+                        width: MediaQuery.of(context).size.width / 3,
                         height: MediaQuery.of(context).size.height / 10,
                         color: const Color.fromARGB(255, 40, 49, 148),
                         child: Center(
@@ -984,23 +1195,34 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
                             ),
                           ),
                           Expanded(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.vertical,
-                              child: DataTable(
-                                sortAscending: sortAscending,
-                                sortColumnIndex: sortColumnIndex,
-                                columns: <DataColumn>[
-                                  DataColumn(
-                                    label: const Text(
-                                      'ID',
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    onSort: (int columnIndex, bool ascending) =>
-                                        _sort<int>((item) => item['id'],
-                                            columnIndex, ascending),
-                                  ),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SingleChildScrollView(
+                                  scrollDirection: Axis.vertical,
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: DataTable(
+                                      columnSpacing: 20,
+                                      sortAscending: sortAscending,
+                                      sortColumnIndex: sortColumnIndex,
+                                      columns: <DataColumn>[
+                                        DataColumn(
+                                          label: Container(
+                                            width:
+                                                20, // Ajusta el ancho de la columna aquí
+                                            child: const Text(
+                                              'ID',
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          onSort: (int columnIndex,
+                                                  bool ascending) =>
+                                              _sort<int>((item) => item['id'],
+                                                  columnIndex, ascending),
+                                        ),
+                                        /*
                                   DataColumn(
                                     label: const Text('Nombre',
                                         style: TextStyle(
@@ -1011,224 +1233,264 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
                                         _sort<String>((item) => item['nombre'],
                                             columnIndex, ascending),
                                   ),
-                                  DataColumn(
-                                    label: const Text('Distrito',
-                                        style: TextStyle(
-                                            fontStyle: FontStyle.italic,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 11)),
-                                    onSort: (int columnIndex, bool ascending) =>
-                                        _sort<String>(
-                                            (item) => item['distrito'],
-                                            columnIndex,
-                                            ascending),
-                                  ),
-                                  DataColumn(
-                                    label: const Text('Tipo',
-                                        style: TextStyle(
-                                            fontStyle: FontStyle.italic,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold)),
-                                    onSort: (int columnIndex, bool ascending) =>
-                                        _sort<String>((item) => item['tipo'],
-                                            columnIndex, ascending),
-                                  ),
-                                  DataColumn(
-                                    label: const Text('Estado',
-                                        style: TextStyle(
-                                            fontStyle: FontStyle.italic,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold)),
-                                    onSort: (int columnIndex, bool ascending) =>
-                                        _sort<String>((item) => item['estado'],
-                                            columnIndex, ascending),
-                                  ),
-                                  DataColumn(
-                                    label: const Text('Fecha',
-                                        style: TextStyle(
-                                            fontStyle: FontStyle.italic,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold)),
-                                    onSort: (int columnIndex, bool ascending) =>
-                                        _sort<String>((item) => item['fecha'],
-                                            columnIndex, ascending),
-                                  ),
-                                  DataColumn(
-                                    label: Container(
-                                      width: 50,
-                                      child: const Text('Ruta',
-                                          style: TextStyle(
-                                              fontStyle: FontStyle.italic,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold)),
-                                    ),
-                                    onSort: (int columnIndex, bool ascending) =>
-                                        _sort<String>((item) => item['ruta_id'],
-                                            columnIndex, ascending),
-                                  ),
-                                  DataColumn(
-                                    label: const Text(
-                                      'Acciones',
-                                      style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ],
-                                rows: List<DataRow>.generate(
-                                  filteredItems.length,
-                                  (index) => DataRow(
-                                    cells: <DataCell>[
-                                      DataCell(Container(
-                                        width: 50,
-                                        //color: Colors.amber,
-                                        child: Text(
-                                          filteredItems[index]['id'].toString(),
-                                          style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold),
+                                  */
+                                        DataColumn(
+                                          label: const Text('Distrito',
+                                              style: TextStyle(
+                                                  fontStyle: FontStyle.italic,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 11)),
+                                          onSort: (int columnIndex,
+                                                  bool ascending) =>
+                                              _sort<String>(
+                                                  (item) => item['distrito'],
+                                                  columnIndex,
+                                                  ascending),
                                         ),
-                                      )),
+                                        DataColumn(
+                                          label: const Text('Tipo',
+                                              style: TextStyle(
+                                                  fontStyle: FontStyle.italic,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold)),
+                                          onSort: (int columnIndex,
+                                                  bool ascending) =>
+                                              _sort<String>(
+                                                  (item) => item['tipo'],
+                                                  columnIndex,
+                                                  ascending),
+                                        ),
+                                        DataColumn(
+                                          label: const Text('Estado',
+                                              style: TextStyle(
+                                                  fontStyle: FontStyle.italic,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold)),
+                                          onSort: (int columnIndex,
+                                                  bool ascending) =>
+                                              _sort<String>(
+                                                  (item) => item['estado'],
+                                                  columnIndex,
+                                                  ascending),
+                                        ),
+                                        DataColumn(
+                                          label: const Text('Fecha',
+                                              style: TextStyle(
+                                                  fontStyle: FontStyle.italic,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold)),
+                                          onSort: (int columnIndex,
+                                                  bool ascending) =>
+                                              _sort<String>(
+                                                  (item) => item['fecha'],
+                                                  columnIndex,
+                                                  ascending),
+                                        ),
+                                        DataColumn(
+                                          label: Container(
+                                            width: 50,
+                                            child: const Text('Ruta',
+                                                style: TextStyle(
+                                                    fontStyle: FontStyle.italic,
+                                                    fontSize: 11,
+                                                    fontWeight:
+                                                        FontWeight.bold)),
+                                          ),
+                                          onSort: (int columnIndex,
+                                                  bool ascending) =>
+                                              _sort<String>(
+                                                  (item) => item['ruta_id'],
+                                                  columnIndex,
+                                                  ascending),
+                                        ),
+                                        DataColumn(
+                                          label: const Text(
+                                            'Acciones',
+                                            style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ],
+                                      rows: List<DataRow>.generate(
+                                        filteredItems.length,
+                                        (index) => DataRow(
+                                          cells: <DataCell>[
+                                            DataCell(Container(
+                                              width: 20,
+                                              //color: Colors.amber,
+                                              child: Text(
+                                                filteredItems[index]['id']
+                                                    .toString(),
+                                                style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                            )),
+
+                                            /*
                                       DataCell(Text(
                                         filteredItems[index]['nombre'],
                                         style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold),
                                       )),
-                                      DataCell(Text(
-                                        filteredItems[index]['distrito'],
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold),
-                                      )),
-                                      DataCell(Text(
-                                        filteredItems[index]['tipo'],
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 9 + 2,
-                                            color: filteredItems[index]['tipo']
-                                                        .toString() ==
-                                                    'normal'
-                                                ? const Color.fromARGB(
-                                                    255, 33, 40, 243)
-                                                : Color.fromARGB(
-                                                    255, 23, 109, 26)),
-                                      )),
-                                      DataCell(Text(
-                                        filteredItems[index]['estado'],
-                                        style: TextStyle(
-                                            fontSize: 9 + 2,
-                                            fontWeight: FontWeight.bold,
-                                            color: filteredItems[index]
-                                                            ['estado']
-                                                        .toString() ==
-                                                    'pendiente'
-                                                ? const Color.fromARGB(
-                                                    255, 33, 40, 243)
-                                                : filteredItems[index]['estado']
-                                                            .toString() ==
-                                                        'anulado'
-                                                    ? Color.fromARGB(
-                                                        255, 130, 18, 68)
-                                                    : filteredItems[index]
-                                                                    ['estado']
-                                                                .toString() ==
-                                                            'en proceso'
-                                                        ? Color.fromARGB(
-                                                            255, 33, 96, 18)
-                                                        : filteredItems[index]['estado']
-                                                                    .toString() ==
-                                                                'terminado'
-                                                            ? const Color.fromARGB(
-                                                                255, 81, 39, 89)
-                                                            : Colors.black),
-                                      )),
-                                      DataCell(Text(
-                                        convertToDateOnly(filteredItems[index]['fecha']),
-                                        style: TextStyle(
-                                            color: getColorByDate(
-                                                filteredItems[index]['fecha']),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 9 + 2),
-                                      )),
-                                      DataCell(Text(
-                                        filteredItems[index]['ruta_id']
-                                            .toString(),
-                                        style: TextStyle(fontSize: 9 + 2),
-                                      )),
-                                      DataCell(
-                                        Row(
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.edit,
-                                                size: 12,
+                                      */
+                                            DataCell(Text(
+                                              filteredItems[index]['distrito'],
+                                              style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold),
+                                            )),
+                                            DataCell(Text(
+                                              filteredItems[index]['tipo'],
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 9 + 2,
+                                                  color: filteredItems[index]
+                                                                  ['tipo']
+                                                              .toString() ==
+                                                          'normal'
+                                                      ? const Color.fromARGB(
+                                                          255, 33, 40, 243)
+                                                      : Color.fromARGB(
+                                                          255, 23, 109, 26)),
+                                            )),
+                                            DataCell(Text(
+                                              filteredItems[index]['estado'],
+                                              style: TextStyle(
+                                                  fontSize: 9 + 2,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: filteredItems[index]
+                                                                  ['estado']
+                                                              .toString() ==
+                                                          'pendiente'
+                                                      ? const Color.fromARGB(
+                                                          255, 33, 40, 243)
+                                                      : filteredItems[index]
+                                                                      ['estado']
+                                                                  .toString() ==
+                                                              'anulado'
+                                                          ? Color.fromARGB(
+                                                              255, 130, 18, 68)
+                                                          : filteredItems[index]['estado']
+                                                                      .toString() ==
+                                                                  'en proceso'
+                                                              ? Color.fromARGB(
+                                                                  255, 33, 96, 18)
+                                                              : filteredItems[index]['estado'].toString() ==
+                                                                      'terminado'
+                                                                  ? const Color.fromARGB(
+                                                                      255, 81, 39, 89)
+                                                                  : Colors.black),
+                                            )),
+                                            DataCell(Text(
+                                              convertToDateOnly(
+                                                  filteredItems[index]
+                                                      ['fecha']),
+                                              style: TextStyle(
+                                                  color: getColorByDate(
+                                                      filteredItems[index]
+                                                          ['fecha']),
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 9 + 2),
+                                            )),
+                                            DataCell(Text(
+                                              filteredItems[index]['ruta_id']
+                                                  .toString(),
+                                              style: TextStyle(fontSize: 9 + 2),
+                                            )),
+                                            DataCell(
+                                              Row(
+                                                children: [
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.add,
+                                                      size: 12,
+                                                    ),
+                                                    onPressed: () =>
+                                                        _updateAndRefresh(
+                                                            filteredItems[index]
+                                                                ['id']),
+                                                    /*
+                                                    onPressed: () =>
+                                                        _showEditDialog(
+                                                            context,
+                                                            filteredItems[
+                                                                index]),
+
+*/
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.delete,
+                                                      size: 12,
+                                                    ),
+                                                    onPressed: () =>
+                                                        deletePedido(
+                                                            filteredItems[index]
+                                                                ['id']),
+                                                  ),
+                                                ],
                                               ),
-                                              onPressed: () => _showEditDialog(
-                                                  context,
-                                                  filteredItems[index]),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.delete,
-                                                size: 12,
-                                              ),
-                                              onPressed: () =>
-                                                  _deletePedido(index),
                                             ),
                                           ],
+                                          selected: selected[index],
+                                          onSelectChanged: (bool? value) {
+                                            setState(() {
+                                              selected[index] = value!;
+                                              if (value) {
+                                                // Añadir marcador al mapa
+                                                idPedidosSeleccionados.add(
+                                                    filteredItems[index]['id']);
+                                                /*print(
+                                              "uno mas $idPedidosSeleccionados");*/
+                                                _addMarkerToMap(
+                                                    filteredItems[index]);
+                                              } else {
+                                                // Remover marcador del mapa
+                                                idPedidosSeleccionados.remove(
+                                                    filteredItems[index]['id']);
+                                                //print("menos uno $idPedidosSeleccionados");
+                                                _removeMarkerFromMap(
+                                                    filteredItems[index]);
+                                              }
+
+                                              // Verificar si todos los elementos están seleccionados
+                                              bool allSelected = selected.every(
+                                                  (item) => item == true);
+                                              if (allSelected) {
+                                                idPedidosSeleccionados =
+                                                    filteredItems
+                                                        .map<int>((item) =>
+                                                            item['id'] as int)
+                                                        .toList();
+                                                /* print(
+                                              "todos $idPedidosSeleccionados");*/
+                                                _addAllMarkersToMap();
+                                              }
+
+                                              // Verificar si todos los elementos están deseleccionados
+                                              bool allDeselected =
+                                                  selected.every(
+                                                      (item) => item == false);
+                                              if (allDeselected) {
+                                                idPedidosSeleccionados = [];
+                                                /* print(
+                                              "ninguno $idPedidosSeleccionados");*/
+                                                _removeAllMarkersFromMap();
+                                              }
+                                            });
+                                          },
                                         ),
                                       ),
-                                    ],
-                                    selected: selected[index],
-                                    onSelectChanged: (bool? value) {
-                                      setState(() {
-                                        selected[index] = value!;
-                                        if (value) {
-                                          // Añadir marcador al mapa
-                                          idPedidosSeleccionados
-                                              .add(filteredItems[index]['id']);
-                                          /*print(
-                                              "uno mas $idPedidosSeleccionados");*/
-                                          _addMarkerToMap(filteredItems[index]);
-                                        } else {
-                                          // Remover marcador del mapa
-                                          idPedidosSeleccionados.remove(
-                                              filteredItems[index]['id']);
-                                          //print("menos uno $idPedidosSeleccionados");
-                                          _removeMarkerFromMap(
-                                              filteredItems[index]);
-                                        }
-
-                                        // Verificar si todos los elementos están seleccionados
-                                        bool allSelected = selected
-                                            .every((item) => item == true);
-                                        if (allSelected) {
-                                          idPedidosSeleccionados = filteredItems
-                                              .map<int>(
-                                                  (item) => item['id'] as int)
-                                              .toList();
-                                          /* print(
-                                              "todos $idPedidosSeleccionados");*/
-                                          _addAllMarkersToMap();
-                                        }
-
-                                        // Verificar si todos los elementos están deseleccionados
-                                        bool allDeselected = selected
-                                            .every((item) => item == false);
-                                        if (allDeselected) {
-                                          idPedidosSeleccionados = [];
-                                          /* print(
-                                              "ninguno $idPedidosSeleccionados");*/
-                                          _removeAllMarkersFromMap();
-                                        }
-                                      });
-                                    },
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
-                          ),
+                          )
                         ],
                       ),
                     )
@@ -1237,228 +1499,374 @@ tiempototal = double.parse((route['duration'] / 60).toStringAsFixed(2)); // 60 s
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
 
-              // CONTENIDO
+              // NUEVA COLUMNA - CONDUCTORES
               Container(
-                width: MediaQuery.of(context).size.width -
-                    (MediaQuery.of(context).size.width / 1.5+12),
+                width: MediaQuery.of(context).size.width / 3,
                 height: MediaQuery.of(context).size.height,
-                color: const Color.fromARGB(255, 100, 100, 100),
+                color: const Color.fromARGB(255, 200, 200,
+                    200), // Change background color for distinction
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    const Text(
+                      "Conductores",
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black),
+                    ),
+                    // Add a DropdownButton or other widgets for this section
+
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: DataTable(
+                          columns: const [
+                            //DataColumn(label: Text('Seleccionar')),
+                            DataColumn(label: Text('ID')),
+                            DataColumn(label: Text('Nombre')),
+                            DataColumn(label: Text('Estado')),
+                          ],
+                          rows: conductorget.map((conductor) {
+                            return DataRow(cells: [
+                              /*
+                              DataCell(
+                                
+                                Checkbox(
+                                  value: selectedConductorIds
+                                      .contains(conductor.id),
+                                  onChanged: (bool? value) {
+                                    _onConductorSelected(value, conductor.id);
+                                  },
+                                ),
+
+
+                              ),
+                              */
+                              DataCell(Text(conductor.id.toString())),
+                              DataCell(Text(
+                                  '${conductor.nombres} ${conductor.apellidos}')),
+                              DataCell(Text(conductor.estado ?? 'N/A')),
+                            ]);
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              //const SizedBox(width: 10),
+
+              // CONTENIDO
+              Container(
+                  width: MediaQuery.of(context).size.width / 3, //-
+                  //(MediaQuery.of(context).size.width / 3),
+                  height: MediaQuery.of(context).size.height,
+                  color: const Color.fromARGB(255, 100, 100, 100),
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            /*
+                            Container(
+                              width: MediaQuery.of(context).size.width / 10,
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10)),
+                              child: DropdownButton(
+                                hint: const Text('Conductores'),
+                                value: selectedConductor,
+                                items: conductorget.map((Conductor chofer) {
+                                  return DropdownMenuItem<Conductor>(
+                                    value: chofer,
+                                    child: Text("${chofer.nombres}"),
+                                  );
+                                }).toList(),
+                                onChanged: (Conductor? newValue) {
+                                  setState(() {
+                                    selectedConductor = newValue;
+                                  });
+                                },
+                              ),
+                            ),
+*/
+                            /*
+                            Container(
+                                width: MediaQuery.of(context).size.width / 10,
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                    color: Color.fromARGB(255, 89, 90, 95),
+                                    borderRadius: BorderRadius.circular(10)),
+                                child: DropdownButton(
+                                  hint: const Text('Vehículos'),
+                                  value: selectedVehiculo,
+                                  items: vehiculos.map((Vehiculo auto) {
+                                    return DropdownMenuItem<Vehiculo>(
+                                      value: auto,
+                                      child: Text("${auto.nombre_modelo}"),
+                                    );
+                                  }).toList(),
+                                  onChanged: (Vehiculo? newValue) {
+                                    setState(() {
+                                      selectedVehiculo = newValue;
+                                    });
+                                  },
+                                )),
+                            */
+
+                            Container(
+                              width: MediaQuery.of(context).size.width / 10,
+                              height: MediaQuery.of(context).size.height / 12,
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10)),
+                              child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (BuildContext context) =>
+                                                Vista1()));
+                                  },
+                                  style: ButtonStyle(
+                                      //shape: WidgetStateProperty.all(),
+
+                                      backgroundColor: WidgetStateProperty.all(
+                                          const Color.fromARGB(
+                                              255, 82, 25, 44))),
+                                  child: const Row(
+                                    children: [
+                                      Text(
+                                        "Rutas",
+                                        style: TextStyle(
+                                            color: Colors.white, fontSize: 20),
+                                      ),
+                                      Icon(
+                                        Icons.alt_route_outlined,
+                                        color: Colors.white,
+                                      )
+                                    ],
+                                  )),
+                            )
+                          ],
+                        ),
+                        const SizedBox(
+                          height: 50,
+                        ),
+
+                        Row(
+                          children: [
+                            Text(
+                              tiempototal > 0.0
+                                  ? "Tiempo estimado de la ruta: ${tiempototal} min"
+                                  : "Calculando: ${tiempototal}",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(
+                              width: 15,
+                            ),
+                            Text(
+                              distanciatotal > 0.0
+                                  ? "Distancia estimada de la ruta: ${distanciatotal} KM"
+                                  : "Calculando ${distanciatotal}",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+
+                        // MAPA
                         Container(
-                          width: MediaQuery.of(context).size.width / 10,
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10)),
-                          child: DropdownButton(
-                            hint: const Text('Conductores'),
-                            value: selectedConductor,
-                            items: conductorget.map((Conductor chofer) {
-                              return DropdownMenuItem<Conductor>(
-                                value: chofer,
-                                child: Text("${chofer.nombres}"),
-                              );
-                            }).toList(),
-                            onChanged: (Conductor? newValue) {
-                              setState(() {
-                                selectedConductor = newValue;
-                              });
-                            },
+                          width: MediaQuery.of(context).size.width / 3,
+                          height: MediaQuery.of(context).size.height / 1.8,
+                          color: Colors.white,
+                          child: FlutterMap(
+                            options: const MapOptions(
+                              initialCenter: LatLng(-16.4055657, -71.5719081),
+                              initialZoom: 14.0,
+                            ),
+                            children: [
+                              TileLayer(
+                                urlTemplate:
+                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                userAgentPackageName: 'com.example.app',
+                              ),
+                              PolylineLayer(
+                                polylines: polylines
+                                    .map((polylineModel) => Polyline(
+                                          points: polylineModel.points,
+                                          color: polylineModel.color,
+                                          strokeWidth: 4.0,
+                                        ))
+                                    .toList(),
+                              ),
+                              MarkerLayer(
+                                  markers: [...markers, ...puntopartida])
+                            ],
                           ),
                         ),
-                        Container(
-                            width: MediaQuery.of(context).size.width / 10,
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                                color: Color.fromARGB(255, 89, 90, 95),
-                                borderRadius: BorderRadius.circular(10)),
-                            child: DropdownButton(
-                              hint: const Text('Vehículos'),
-                              value: selectedVehiculo,
-                              items: vehiculos.map((Vehiculo auto) {
-                                return DropdownMenuItem<Vehiculo>(
-                                  value: auto,
-                                  child: Text("${auto.nombre_modelo}"),
-                                );
-                              }).toList(),
-                              onChanged: (Vehiculo? newValue) {
-                                setState(() {
-                                  selectedVehiculo = newValue;
-                                });
-                              },
-                            )),
-                        Container(
-                          width: MediaQuery.of(context).size.width / 10,
-                          height: MediaQuery.of(context).size.height / 12,
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10)),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        /*Container(
+                          width: MediaQuery.of(context).size.width / 2,
                           child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (BuildContext context) =>
-                                            Vista1()));
-                              },
+                              onPressed: selectedConductorIds.isNotEmpty
+                                  ? () async {
+                                      showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: Text("Crear ruta"),
+                                              actions: [
+                                                TextButton(
+                                                    onPressed: () {
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: Text("Cancelar")),
+                                                TextButton(
+                                                    onPressed: () async {
+                                                      CircularProgressIndicator(
+                                                        color: Colors.pink,
+                                                      );
+                                                      await crearobtenerYactualizarRuta(
+                                                          selectedConductorIds
+                                                              .first,
+                                                          0,
+                                                          0,
+                                                          'en proceso');
+                                                      setState(() {
+                                                        selected =
+                                                            List<bool>.filled(
+                                                                filteredItems
+                                                                    .length,
+                                                                false);
+                                                        _removeAllMarkersFromMap();
+                                                        idPedidosSeleccionados =
+                                                            [];
+                                                      });
+                                                      /*  print(
+                                                      "---verificar lista de idps");*/
+                                                      // print(idPedidosSeleccionados);
+                                                      fetchPedidos();
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: Text("Aceptar"))
+                                              ],
+                                            );
+                                          });
+                                    }
+                                  : null,
                               style: ButtonStyle(
-                                  //shape: WidgetStateProperty.all(),
-
                                   backgroundColor: WidgetStateProperty.all(
-                                      const Color.fromARGB(255, 82, 25, 44))),
+                                      Color.fromARGB(255, 40, 33, 165))),
                               child: const Row(
                                 children: [
                                   Text(
-                                    "Rutas",
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 20),
+                                    "Crear ruta",
+                                    style: TextStyle(color: Colors.white),
                                   ),
                                   Icon(
-                                    Icons.alt_route_outlined,
+                                    Icons.add,
                                     color: Colors.white,
                                   )
                                 ],
                               )),
-                        )
-                      ],
-                    ),
-                    const SizedBox(
-                      height: 50,
-                    ),
-
-                    Row(
-                      children: [
-                        Text(
-                          tiempototal > 0.0
-                              ? "Tiempo estimado: ${tiempototal} min"
-                              : "Calculando: ${tiempototal}",
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                        Icon(Icons.timer_outlined),
-                        const SizedBox(
-                          width: 15,
-                        ),
-                        Text(
-                          distanciatotal > 0.0
-                              ? "Distancia: ${distanciatotal} KM"
-                              : "Calculando ${distanciatotal}",
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                        Icon(Icons.directions)
-                      ],
-                    ),
-
-                    // MAPA
-                    Container(
-                      width: MediaQuery.of(context).size.width / 2.5,
-                      height: MediaQuery.of(context).size.height / 1.8,
-                      color: Colors.white,
-                      child: FlutterMap(
-                        options: const MapOptions(
-                          initialCenter: LatLng(-16.4055657, -71.5719081),
-                          initialZoom: 14.0,
-                        ),
-                        children: [
-                          TileLayer(
-                            urlTemplate:
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.example.app',
-                          ),
-                          PolylineLayer(
-                            polylines: polylines
-                                .map((polylineModel) => Polyline(
-                                      points: polylineModel.points,
-                                      color: polylineModel.color,
-                                      strokeWidth: 4.0,
-                                    ))
-                                .toList(),
-                          ),
-                          MarkerLayer(markers: [...markers, ...puntopartida])
-                        ],
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    Container(
-                      width: MediaQuery.of(context).size.width / 2,
-                      child: ElevatedButton(
-                          onPressed: selected.isNotEmpty &&
-                                  selectedConductor != null &&
-                                  selectedVehiculo != null
-                              ? () async {
-                                  showDialog(
+                        ),*/
+                        SizedBox(height: 16),
+                        Container(
+                          width: MediaQuery.of(context).size.width / 2,
+                          child: ElevatedButton(
+                            onPressed: idPedidosSeleccionados.isNotEmpty
+                                ? () async {
+                                    showDialog(
                                       context: context,
                                       builder: (BuildContext context) {
                                         return AlertDialog(
-                                          title: Text("Crear ruta"),
+                                          title: Text("Crear Ruta Pública"),
+                                          content: Text(
+                                              "¿Estás seguro de crear una ruta pública?"),
                                           actions: [
                                             TextButton(
-                                                onPressed: () {
-                                                  Navigator.pop(context);
-                                                },
-                                                child: Text("Cancelar")),
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                              },
+                                              child: Text("Cancelar"),
+                                            ),
                                             TextButton(
-                                                onPressed: () async {
-                                                  CircularProgressIndicator(
-                                                    color: Colors.pink,
+                                              onPressed: () async {
+                                                // Show a loading indicator
+                                                showDialog(
+                                                  context: context,
+                                                  barrierDismissible: false,
+                                                  builder:
+                                                      (BuildContext context) {
+                                                    return Center(
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        color: Colors.pink,
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+
+                                                await crearObtenerYActualizarRutaPublica(
+                                                  0,
+                                                  0,
+                                                  'pendiente',
+                                                );
+
+                                                Navigator.pop(
+                                                    context); // Close the loading dialog
+
+                                                setState(() {
+                                                  selected = List<bool>.filled(
+                                                    filteredItems.length,
+                                                    false,
                                                   );
-                                                  await crearobtenerYactualizarRuta(
-                                                      idempleado,
-                                                      selectedConductor!.id,
-                                                      selectedVehiculo!.id,
-                                                      0,
-                                                      0,
-                                                      'en proceso');
-                                                  setState(() {
-                                                    selected =
-                                                        List<bool>.filled(
-                                                            filteredItems
-                                                                .length,
-                                                            false);
-                                                    _removeAllMarkersFromMap();
-                                                    idPedidosSeleccionados = [];
-                                                  });
-                                                  /*  print(
-                                                      "---verificar lista de idps");*/
-                                                  // print(idPedidosSeleccionados);
-                                                  fetchPedidos();
-                                                  Navigator.pop(context);
-                                                },
-                                                child: Text("Aceptar"))
+                                                  _removeAllMarkersFromMap();
+                                                  idPedidosSeleccionados = [];
+                                                });
+
+                                                fetchPedidos();
+                                                Navigator.pop(
+                                                    context); // Close the main dialog
+                                              },
+                                              child: Text("Aceptar"),
+                                            ),
                                           ],
                                         );
-                                      });
-                                }
-                              : null,
-                          style: ButtonStyle(
-                              backgroundColor: WidgetStateProperty.all(
-                                  Color.fromARGB(255, 40, 33, 165))),
-                          child: const Row(
-                            children: [
-                              Text(
-                                "Crear ruta",
-                                style: TextStyle(color: Colors.white),
-                              ),
-                              Icon(
-                                Icons.add,
-                                color: Colors.white,
-                              )
-                            ],
-                          )),
-                    )
-                  ],
-                ),
-              ),
+                                      },
+                                    );
+                                  }
+                                : null,
+                            style: ButtonStyle(
+                              backgroundColor: MaterialStateProperty.all(
+                                  Color.fromARGB(255, 33, 150, 243)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Crear ruta pública",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                Icon(
+                                  Icons.public,
+                                  color: Colors.white,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ]))
             ],
           ),
         ));

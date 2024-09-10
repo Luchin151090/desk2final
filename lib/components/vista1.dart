@@ -47,14 +47,14 @@ class PedidoRuta {
 
 class Ruta {
   final int id;
-  final String nombres;
-  final String nombre_modelo;
-  final String fecha_creacion;
+  final String? conductor_id;
+  final String? vehiculo_id;
+  final String? fecha_creacion;
 
   Ruta({
     required this.id,
-    required this.nombres,
-    required this.nombre_modelo,
+    required this.conductor_id,
+    required this.vehiculo_id,
     required this.fecha_creacion,
   });
 }
@@ -77,7 +77,7 @@ class _Vista1State extends State<Vista1> {
   String apiEmpleadoPedidos = '/api/empleadopedido/';
   String apiVehiculos = '/api/vehiculo/';
   String totalventas = '/api/totalventas_empleado/';
-  String allrutasempleado = '/api/allrutas_empleado/';
+  String allrutasend = '/api/allrutas';
   String rutapedidos = '/api/ruta/';
   String updatedeletepedido = '/api/revertirpedido/';
   List<Ruta> rutasempleado = [];
@@ -87,38 +87,44 @@ class _Vista1State extends State<Vista1> {
   String nombreModelo = "NA";
   String fechacreacionruta = "NA";
   List<PedidoRuta> pedidosruta = [];
-  List<Marker>markers = [];
-late Color nuevocolor;
-  void anadirMarcadorPorRuta(int index,LatLng ubicacion,color){
+  List<PedidoRuta> nuevalistapedidosruta = [];
+  List<Marker> markers = [];
+  late Color nuevocolor;
+  void anadirMarcadorPorRuta(int index, LatLng ubicacion, color) {
     //final color = itemColors[index % itemColors.length];
     final marker = Marker(
-          width: 200.0,
-          height: 200.0,
-          point: ubicacion,
-          child: Column(
-            children: [
-              Container(
-                  width: 80.0,
-                  height: 80.0,
-                  decoration: BoxDecoration(
-                      border: Border.all(width: 3,color: const Color.fromARGB(255, 29, 28, 28)),
-                      borderRadius: BorderRadius.circular(50),
-                      color:color.withOpacity(0.5)),
-                  child: Center(child: Text("${index + 1}",style: const TextStyle(fontSize: 18,
-                  fontWeight: FontWeight.bold),))),
-              Icon(
-                Icons.location_on_outlined,
-                color: color,
-                size: 100.0,
-              ),
-            ],
+      width: 200.0,
+      height: 200.0,
+      point: ubicacion,
+      child: Column(
+        children: [
+          Container(
+              width: 80.0,
+              height: 80.0,
+              decoration: BoxDecoration(
+                  border: Border.all(
+                      width: 3, color: const Color.fromARGB(255, 29, 28, 28)),
+                  borderRadius: BorderRadius.circular(50),
+                  color: color.withOpacity(0.5)),
+              child: Center(
+                  child: Text(
+                "${index + 1}",
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ))),
+          Icon(
+            Icons.location_on_outlined,
+            color: color,
+            size: 100.0,
           ),
-        );
-      markers.add(marker);
-}
+        ],
+      ),
+    );
+    markers.add(marker);
+  }
 
-  Future<dynamic> getpedidosruta(rutaid,color) async {
-   /* print("-----ruta---");
+  Future<dynamic> getpedidosruta(rutaid, color) async {
+    /* print("-----ruta---");
     print(rutaid);*/
     int count = 1;
     try {
@@ -146,19 +152,22 @@ late Color nuevocolor;
               longitud: data['longitud']);
         }).toList();
 
-      
-          
         if (mounted) {
           setState(() {
-            pedidosruta = tempPedido.isEmpty ? [] : tempPedido;
-            for(var i=0;i<pedidosruta.length;i++){
+            pedidosruta = tempPedido;
+            //  nuevalistapedidosruta = pedidosruta;
+            for (var i = 0; i < pedidosruta.length; i++) {
               double offset = count * 0.000005;
-              anadirMarcadorPorRuta(i,LatLng(pedidosruta[i].latitud+offset, pedidosruta[i].longitud+offset),color);
+              print("---iterar");
+              print(i);
+              anadirMarcadorPorRuta(
+                  i,
+                  LatLng(pedidosruta[i].latitud + offset,
+                      pedidosruta[i].longitud + offset),
+                  color);
               count++;
             }
-            
           });
-          
         }
         return pedidosruta;
       }
@@ -168,13 +177,13 @@ late Color nuevocolor;
   }
 
   Future<dynamic> getallrutasempleado() async {
-    SharedPreferences empleadoShare = await SharedPreferences.getInstance();
+    //SharedPreferences empleadoShare = await SharedPreferences.getInstance();
 
-      var empleado = empleadoShare.getInt('empleadoID');
+    //var empleado = empleadoShare.getInt('empleadoID');
     try {
-      var res = await http.get(
-          Uri.parse(api + allrutasempleado + empleado.toString()),
-          headers: {"Content-type": "application/json"});
+      var res =
+          await http.get(Uri.parse(api + allrutasend), //empleado.toString()),
+              headers: {"Content-type": "application/json"});
 
       if (res.statusCode == 200) {
         var responseData = json.decode(res.body);
@@ -187,8 +196,8 @@ late Color nuevocolor;
               (responseData['data'] as List).map<Ruta>((item) {
             return Ruta(
               id: item['id'],
-              nombres: item['nombres'],
-              nombre_modelo: item['nombre_modelo'],
+              conductor_id: item['nombres'],
+              vehiculo_id: item['nombre_modelo'],
               fecha_creacion: item['fecha_creacion'].toString(),
             );
           }).toList();
@@ -197,9 +206,10 @@ late Color nuevocolor;
             setState(() {
               rutasempleado = temprutasempleado;
               numeroruta = rutasempleado.length;
-              for(var i=0;i<rutasempleado.length;i++){
+              for (var i = 0; i < rutasempleado.length; i++) {
                 print("......rutas: ${rutasempleado[i].id}");
-                getpedidosruta(rutasempleado[i].id,itemColors[i % itemColors.length]);
+                getpedidosruta(
+                    rutasempleado[i].id, itemColors[i % itemColors.length]);
               }
             });
           }
@@ -269,75 +279,95 @@ late Color nuevocolor;
                   color: Colors.white,
                   child: Column(
                     children: [
-                    
                       Container(
                         width: MediaQuery.of(context).size.width / 5.5,
-                        height: MediaQuery.of(context).size.height - MediaQuery.of(context).size.height / 10.0,
+                        height: MediaQuery.of(context).size.height -
+                            MediaQuery.of(context).size.height / 10.0,
                         color: Colors.grey,
-                        child: rutasempleado.isNotEmpty ? ListView.builder(
-                          itemCount: rutasempleado.length,
-                          itemBuilder: (context, index) {
-                            final color = itemColors[index % itemColors.length];
-                            
-                           // getpedidosruta(rutasempleado[index].id,color);
-                            return Container(
-                              margin: const EdgeInsets.only(top: 10),
-                              height: 100,
-                              color: color,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    "Ruta ${rutasempleado[index].id}",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white),
-                                  ),
-                                  const SizedBox(
-                                    width: 50,
-                                  ),
-                                  IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          isVisible = !isVisible;
-                                          idruta = rutasempleado[index].id;
-                                          nombreConductor =
-                                              rutasempleado[index].nombres;
-                                          nombreModelo = rutasempleado[index]
-                                              .nombre_modelo;
-                                          fechacreacionruta =
-                                              rutasempleado[index]
-                                                  .fecha_creacion;
-                                        });
-                                      },
-                                      icon: const Icon(
-                                        Icons.format_align_left_sharp,
-                                        color: Colors.white,
-                                      )),
-                                  IconButton(
-                                      onPressed: ()async {
-                                        List<PedidoRuta>pedidosRuta = [];
-                                        pedidosRuta = await getpedidosruta(rutasempleado[index].id,color);
-                                       // print("peiddooooo.....$pedidosRuta");
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder:
-                                                    (BuildContext context) =>
-                                                        Vista2(idRuta:rutasempleado[index].id,
-                                                        pedidos:pedidosRuta,
-                                                        colorRuta:color)));
-                                      },
-                                      icon: const Icon(
-                                        Icons.roundabout_right_outlined,
-                                        color: Colors.white,
-                                      ))
-                                ],
+                        child: rutasempleado.isNotEmpty
+                            ? ListView.builder(
+                                itemCount: rutasempleado.length,
+                                itemBuilder: (context, index) {
+                                  final color =
+                                      itemColors[index % itemColors.length];
+
+                                  // getpedidosruta(rutasempleado[index].id,color);
+                                  return Container(
+                                    margin: const EdgeInsets.only(top: 10),
+                                    height: 100,
+                                    color: color,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          "Ruta ${rutasempleado[index].id}",
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white),
+                                        ),
+                                        const SizedBox(
+                                          width: 50,
+                                        ),
+                                        IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                isVisible = !isVisible;
+                                                idruta =
+                                                    rutasempleado[index].id;
+                                                nombreConductor =
+                                                    rutasempleado[index]
+                                                        .conductor_id!;
+                                                nombreModelo =
+                                                    rutasempleado[index]
+                                                        .vehiculo_id!;
+                                                fechacreacionruta =
+                                                    rutasempleado[index]
+                                                        .fecha_creacion!;
+                                              });
+                                            },
+                                            icon: const Icon(
+                                              Icons.format_align_left_sharp,
+                                              color: Colors.white,
+                                            )),
+                                        IconButton(
+                                            onPressed: () async {
+                                              List<PedidoRuta> pedidosRuta = [];
+                                              pedidosRuta =
+                                                  await getpedidosruta(
+                                                      rutasempleado[index].id,
+                                                      color);
+                                              print(
+                                                  "peiddooooo.....$pedidosruta");
+                                              Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                      builder: (BuildContext
+                                                              context) =>
+                                                          Vista2(
+                                                              idRuta:
+                                                                  rutasempleado[
+                                                                          index]
+                                                                      .id,
+                                                              pedidos:
+                                                                  pedidosRuta,
+                                                              colorRuta:
+                                                                  color)));
+                                            },
+                                            icon: const Icon(
+                                              Icons.roundabout_right_outlined,
+                                              color: Colors.white,
+                                            ))
+                                      ],
+                                    ),
+                                  );
+                                },
+                              )
+                            : Center(
+                                child: Text("Hoy día no hay rutas"),
                               ),
-                            );
-                          },
-                        ): Center(child: Text("Hoy día no hay rutas"),),
                       )
                     ],
                   ),
