@@ -21,6 +21,33 @@ import 'dart:math' as math;
 import 'package:intl/intl.dart';
 import 'dart:math';
 
+class PedidoRuta {
+  final int id;
+  final int ruta_id;
+  final String nombre_cliente;
+  final String apellidos_cliente;
+  final String telefono_cliente;
+  final double total;
+  final String fecha;
+  final String tipo;
+  final String estado; //mejora
+  final String distrito;
+  final String direccion;
+
+  PedidoRuta(
+      {required this.id,
+      required this.ruta_id,
+      required this.nombre_cliente,
+      required this.apellidos_cliente,
+      required this.telefono_cliente,
+      required this.total,
+      required this.fecha,
+      required this.tipo,
+      required this.estado,
+      required this.distrito,
+      required this.direccion});
+}
+
 class Vehiculo {
   final int id;
   final String nombre_modelo;
@@ -85,6 +112,9 @@ class _Vista0State extends State<Vista0> {
   String apiEmpleadoPedidos = '/api/empleadopedido/';
   String apiVehiculos = '/api/vehiculo/';
   String totalventas = '/api/totalventas_empleado/';
+  String allrutasend = '/api/allrutas';
+  String apiDetallePedido = '/api/detallepedido/';
+  String rutapedidos = '/api/ruta/';
   Position? _currentPosition;
   bool isVisible = false;
   Conductor? selectedConductor;
@@ -106,6 +136,7 @@ class _Vista0State extends State<Vista0> {
   Timer? _timer;
   Map<String, Marker> markersMap = {};
   //
+  List<Ruta> rutasempleado = [];
   List<LatLng> coordenadasgenerales = [];
   List<PolylineModel> polylines = [];
   late LatLng coordenadaActual;
@@ -114,6 +145,47 @@ class _Vista0State extends State<Vista0> {
   double tiempototal = 0.0;
   List<Marker> puntopartida = [];
   late IO.Socket socket;
+  int numeroruta = 0;
+  List<PedidoRuta> pedidosruta = [];
+  Map<int, String> productosYCantidadesPorPedido = {};
+
+  Future<dynamic> _showPedidosxruta(int numberruta) async {
+    //print(rutaid);
+    try {
+      var res = await http.get(
+          Uri.parse(api + rutapedidos + numberruta.toString()),
+          headers: {"Content-type": "application/json"});
+      if (res.statusCode == 200) {
+        var data = json.decode(res.body);
+        //print("rutita--------------");
+        //print(data);
+        List<PedidoRuta> tempPedido = data.map<PedidoRuta>((data) {
+          return PedidoRuta(
+              id: data['pedido_id'],
+              ruta_id: data['ruta_id'],
+              nombre_cliente: data[
+                  'nombre_cliente'], // cliente_nr_id : 53 //cliente_id : null
+              apellidos_cliente: data['apellidos_cliente'],
+              telefono_cliente: data['telefono_cliente'],
+              total: data['total']?.toDouble() ?? 0.0,
+              fecha: data['fecha'].toString(),
+              tipo: data['tipo'],
+              estado: data['estado'],
+              distrito: data['distrito'],
+              direccion: data['direccion']);
+        }).toList();
+
+        tempPedido =
+            tempPedido.where((pedido) => pedido.estado != "anulado").toList();
+
+        if (mounted) {
+          pedidosruta = tempPedido.isEmpty ? [] : tempPedido;
+        }
+      }
+    } catch (error) {
+      throw Exception("Error pedidos ruta $error");
+    }
+  }
 
   String convertToDateOnly(String dateTimeString) {
     // Convertir la cadena de entrada a un objeto DateTime
@@ -123,6 +195,56 @@ class _Vista0State extends State<Vista0> {
     String formattedDate = DateFormat('yyyy-MM-dd').format(parsedDateTime);
 
     return formattedDate;
+  }
+
+  Future<dynamic> getallrutasempleado() async {
+    //SharedPreferences empleadoShare = await SharedPreferences.getInstance();
+
+    //var empleado = empleadoShare.getInt('empleadoID');
+    try {
+      var res =
+          await http.get(Uri.parse(api + allrutasend), //empleado.toString()),
+              headers: {"Content-type": "application/json"});
+
+      if (res.statusCode == 200) {
+        var responseData = json.decode(res.body);
+        // print("rutass data");
+        //print(responseData['data']);
+
+        // Asegúrate de que responseData['data'] sea una lista antes de usar map
+        if (responseData['data'] is List) {
+          List<Ruta> temprutasempleado =
+              (responseData['data'] as List).map<Ruta>((item) {
+            return Ruta(
+              id: item['id'],
+              conductor_id: item['nombres'],
+              vehiculo_id: item['nombre_modelo'],
+              fecha_creacion: item['fecha_creacion'].toString(),
+            );
+          }).toList();
+
+          if (mounted) {
+            setState(() {
+              rutasempleado = temprutasempleado;
+              numeroruta = rutasempleado.length;
+              /* for (var i = 0; i < rutasempleado.length; i++) {
+                print("......rutas: ${rutasempleado[i].id}");
+               /* getpedidosruta(
+                    rutasempleado[i].id, itemColors[i % itemColors.length]);*/
+              }*/
+            });
+          }
+        } else {
+          print('No se encontraron rutas en la respuesta.');
+        }
+      } else if (res.statusCode == 404) {
+        print('No se encontraron rutas.');
+      } else {
+        print('Error inesperado: ${res.statusCode}');
+      }
+    } catch (error) {
+      throw Exception("Error de petición: $error");
+    }
   }
 
   Future<void> crearObtenerYActualizarRutaPublica(
@@ -678,6 +800,95 @@ class _Vista0State extends State<Vista0> {
     print('Editar pedido con ID: ${filteredItems[index]['id']}');
   }
 
+  void _showDetallesModal(BuildContext context, int index) {
+    final pedido = filteredItems[index];
+    final pedidoID = pedido['id'];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Detalles del Pedido #$pedidoID'),
+          content: FutureBuilder(
+            future: getDetalleXUnPedido(pedidoID),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Text('Error: ${snapshot.error}');
+              } else {
+                return SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Dirección:',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text(pedido['direccion']),
+                      const SizedBox(height: 10),
+                      const Text('Total:',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text('\S/.${pedido['total']}'),
+                      const SizedBox(height: 10),
+                      const Text('Productos:',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text(productosYCantidadesPorPedido[pedidoID] ??
+                          'No hay detalles disponibles'),
+                    ],
+                  ),
+                );
+              }
+            },
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cerrar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> getDetalleXUnPedido(int pedidoID) async {
+    if (pedidoID != 0) {
+      var res = await http.get(
+        Uri.parse(api + apiDetallePedido + pedidoID.toString()),
+        headers: {"Content-type": "application/json"},
+      );
+      try {
+        if (res.statusCode == 200) {
+          var data = json.decode(res.body);
+          List<DetallePedido> listTemporal = data.map<DetallePedido>((mapa) {
+            return DetallePedido(
+              pedidoID: mapa['pedido_id'],
+              productoID: mapa['producto_id'],
+              productoNombre: mapa['nombre_prod'],
+              cantidadProd: mapa['cantidad'],
+              promocionID: mapa['promocion_id'],
+              promocionNombre: mapa['nombre_prom'],
+            );
+          }).toList();
+
+          setState(() {
+            String detalles = '';
+            for (var detalle in listTemporal) {
+              var salto = detalles.isEmpty ? '' : '\n';
+              detalles +=
+                  "$salto${detalle.productoNombre.capitalize()} x ${detalle.cantidadProd} uds.";
+            }
+            productosYCantidadesPorPedido[pedidoID] = detalles;
+          });
+        }
+      } catch (e) {
+        throw Exception('Error en la solicitud: $e');
+      }
+    }
+  }
+
   Future<void> updatePedido(int pedidoID, Map<String, dynamic> newDatos) async {
     final response = await http.put(
       Uri.parse(api + '/api/pedidoModificado/$pedidoID'),
@@ -909,6 +1120,7 @@ class _Vista0State extends State<Vista0> {
   void initState() {
     super.initState();
     //initSocket();
+    getallrutasempleado();
 
     // socket
     final socketService = SocketService();
@@ -965,14 +1177,6 @@ class _Vista0State extends State<Vista0> {
           });
 
           // Verificar si los cambios se aplicaron
-          print(
-              "Estado después de actualizar: ${filteredItems[itemIndex]['estado']}");
-          print(
-              "Tipo después de actualizar: ${filteredItems[itemIndex]['tipo']}");
-          print(
-              "Fecha después de actualizar: ${filteredItems[itemIndex]['fecha']}");
-          print(
-              "Ruta ID después de actualizar: ${filteredItems[itemIndex]['ruta_id']}");
         } else {
           print("No se encontró ningún item con ID=${data['id']}");
         }
@@ -1054,9 +1258,8 @@ class _Vista0State extends State<Vista0> {
                 color: Colors.white,
                 child: Column(
                   children: [
-                    
                     Container(
-                        width: MediaQuery.of(context).size.width / 3,
+                        width: MediaQuery.of(context).size.width / 2.5,
                         height: MediaQuery.of(context).size.height / 10,
                         color: const Color.fromARGB(255, 40, 49, 148),
                         child: Center(
@@ -1070,13 +1273,16 @@ class _Vista0State extends State<Vista0> {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white),
                             ),
+                            const SizedBox(
+                              width: 20,
+                            ),
                             Container(
                               height: 50,
                               width: 50,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(50),
-                                color: const Color.fromARGB(255, 33, 61, 243)
-                              ),
+                                  borderRadius: BorderRadius.circular(50),
+                                  color:
+                                      const Color.fromARGB(255, 33, 61, 243)),
                               //color: const Color.fromARGB(255, 50, 50, 50),
                               child: IconButton(
                                   onPressed: () {
@@ -1439,6 +1645,15 @@ class _Vista0State extends State<Vista0> {
                                                             filteredItems[index]
                                                                 ['id']),
                                                   ),
+                                                  IconButton(
+                                                    icon: Icon(
+                                                        Icons
+                                                            .visibility_outlined,
+                                                        size: 12),
+                                                    onPressed: () =>
+                                                        _showDetallesModal(
+                                                            context, index),
+                                                  ),
                                                 ],
                                               ),
                                             ),
@@ -1511,7 +1726,8 @@ class _Vista0State extends State<Vista0> {
               Container(
                 width: MediaQuery.of(context).size.width / 3.5,
                 height: MediaQuery.of(context).size.height,
-                color: Color.fromARGB(255, 255, 255, 255), // Change background color for distinction
+                color: Color.fromARGB(255, 255, 255,
+                    255), // Change background color for distinction
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -1519,7 +1735,7 @@ class _Vista0State extends State<Vista0> {
                         width: MediaQuery.of(context).size.width / 3,
                         height: MediaQuery.of(context).size.height / 10,
                         color: const Color.fromARGB(255, 40, 49, 148),
-                        child: Center(
+                        child: const Center(
                             child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -1530,7 +1746,6 @@ class _Vista0State extends State<Vista0> {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white),
                             ),
-                           
                           ],
                         ))),
                     /*const Text(
@@ -1568,9 +1783,8 @@ class _Vista0State extends State<Vista0> {
                               ),
                               */
                               DataCell(Text(conductor.id.toString())),
-                              DataCell(Text(
-                                  '${conductor.nombres} ${conductor.apellidos}')),
-                              DataCell(Text(conductor.estado ?? 'N/A')),
+                              DataCell(Text('${conductor.nombres}')),
+                              DataCell(Text("${conductor.estado}")),
                             ]);
                           }).toList(),
                         ),
@@ -1584,98 +1798,223 @@ class _Vista0State extends State<Vista0> {
 
               // CONTENIDO
               Container(
-                  width: MediaQuery.of(context).size.width / 3.5, //-
+                  width: MediaQuery.of(context).size.width / 3.2, //-
                   //(MediaQuery.of(context).size.width / 3),
                   height: MediaQuery.of(context).size.height,
                   color: Color.fromARGB(255, 255, 255, 255),
                   child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            
+                        // SE QUITO ESTE CODIGO PORQUE SE NECESITA PLANTEAR A FUTURO LA GESTIÓN DE RUTAS
+                        /* Container(
+                          width: MediaQuery.of(context).size.width / 3.3,
+                          height: MediaQuery.of(context).size.height / 12,
+                          padding:const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10)),
+                          child: ElevatedButton(
+                              onPressed: () {
+                               /* Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (BuildContext context) =>
+                                            Vista1()));*/
+                              },
+                              style: ButtonStyle(
+                                  //shape: WidgetStateProperty.all(),
 
-                            Container(
-                              width: MediaQuery.of(context).size.width / 3.5,
-                              height: MediaQuery.of(context).size.height / 12,
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10)),
-                              child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (BuildContext context) =>
-                                                Vista1()));
-                                  },
-                                  style: ButtonStyle(
-                                      //shape: WidgetStateProperty.all(),
-
-                                      backgroundColor: WidgetStateProperty.all(
-                                          const Color.fromARGB(
-                                              255, 82, 25, 44))),
-                                  child: const Row(
-                                    children: [
-                                      Text(
-                                        "Ver rutas",
-                                        style: TextStyle(
-                                            color: Colors.white, fontSize: 20),
-                                      ),
-                                      Icon(
-                                        Icons.alt_route_outlined,
-                                        color: Colors.white,
-                                      )
-                                    ],
-                                  )),
-                            )
-                          ],
+                                  backgroundColor: WidgetStateProperty.all(
+                                      Color.fromARGB(255, 173, 172, 173))),
+                              child: const Row(
+                                children: [
+                                  Text(
+                                    "Bloqueado: ver rutas",
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 20),
+                                  ),
+                                  Icon(
+                                    Icons.alt_route_outlined,
+                                    color: Colors.white,
+                                  )
+                                ],
+                              )),
                         ),
+                          */
+                        Container(
+                            width: MediaQuery.of(context).size.width / 3,
+                            height: MediaQuery.of(context).size.height / 10,
+                            color: const Color.fromARGB(255, 40, 49, 148),
+                            child: const Center(
+                                child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  "Rutas",
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                ),
+                              ],
+                            ))),
                         const SizedBox(
                           height: 30,
+                        ),
+
+                        // DATA TABLE
+                        Expanded(
+                          child: SingleChildScrollView(
+                            child: rutasempleado.length > 0
+                                ? DataTable(
+                                    columns: const [
+                                      //DataColumn(label: Text('Seleccionar')),
+                                      DataColumn(label: Text('ID')),
+                                      DataColumn(label: Text('Fecha')),
+                                      DataColumn(label: Text('Detalles')),
+                                    ],
+                                    rows: rutasempleado.map((ruta) {
+                                      return DataRow(cells: [
+                                        /*
+                              DataCell(
+                                
+                                Checkbox(
+                                  value: selectedConductorIds
+                                      .contains(conductor.id),
+                                  onChanged: (bool? value) {
+                                    _onConductorSelected(value, conductor.id);
+                                  },
+                                ),
+
+
+                              ),
+                              */
+                                        DataCell(Text(ruta.id.toString())),
+                                        DataCell(
+                                            Text('${ruta.fecha_creacion}')),
+                                        DataCell(
+  IconButton(
+    icon: const Icon(
+      Icons.visibility,
+      size: 12,
+    ),
+    onPressed: () async {
+      // Llamamos a la función asíncrona para obtener los pedidos
+      await _showPedidosxruta(ruta.id);
+      
+      // Mostramos el diálogo solo si hay datos
+      if (pedidosruta.isNotEmpty) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Lista de pedidos"),
+              content: SizedBox(
+                height: MediaQuery.of(context).size.height / 2,
+                width: MediaQuery.of(context).size.width/4,
+                child: ListView.builder(
+                  itemCount: pedidosruta.length,
+                  itemBuilder: (context, index) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("ID: ${pedidosruta[index].id}"),
+                        Text("Total: ${pedidosruta[index].total}"),
+                        Text("Cliente: ${pedidosruta[index].nombre_cliente}"),
+                        Text("Tipo: ${pedidosruta[index].tipo}"),
+                        Text("Dirección: ${pedidosruta[index].direccion}"),
+                        Text("Estado: ${pedidosruta[index].estado}"),
+                        const Divider(), // Para separar cada pedido visualmente
+                      ],
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  child: const Text("Cerrar"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        // Si no hay pedidos, mostramos un mensaje indicando que no hay datos
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("No hay pedidos"),
+              content: const Text("No se encontraron pedidos para esta ruta."),
+              actions: [
+                TextButton(
+                  child: const Text("Cerrar"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
+    },
+  ),
+)
+
+                                      ]);
+                                    }).toList(),
+                                  )
+                                : Center(
+                                    child: Text("No hay datos disponibles"),
+                                  ),
+                          ),
                         ),
 
                         Column(
                           children: [
                             Row(
                               children: [
-                                Container(width: 20,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  color: Colors.amber,
-                                  borderRadius: BorderRadius.circular(50)
-                                ),),
-                                 const SizedBox(
-                              width: 15,
-                            ),
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                      color: Colors.amber,
+                                      borderRadius: BorderRadius.circular(50)),
+                                ),
+                                const SizedBox(
+                                  width: 15,
+                                ),
                                 Text(
                                   tiempototal > 0.0
                                       ? "Tiempo : ${tiempototal} min"
                                       : "Esperando tiempo: ${tiempototal}",
-                                  style:const  TextStyle(
+                                  style: const TextStyle(
                                       color: Colors.black,
                                       fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
-                            
                             Row(
                               children: [
-                                Container(width: 20,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  color: const Color.fromARGB(255, 44, 33, 243),
-                                  borderRadius: BorderRadius.circular(50)
-                                ),),
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                      color: const Color.fromARGB(
+                                          255, 44, 33, 243),
+                                      borderRadius: BorderRadius.circular(50)),
+                                ),
                                 const SizedBox(
-                              width: 15,
-                            ),
+                                  width: 15,
+                                ),
                                 Text(
                                   distanciatotal > 0.0
                                       ? "Distancia : ${distanciatotal} KM"
                                       : "Esperando distancia ${distanciatotal}",
-                                  style:const TextStyle(
+                                  style: const TextStyle(
                                       color: Colors.black,
                                       fontWeight: FontWeight.bold),
                                 ),
@@ -1686,8 +2025,8 @@ class _Vista0State extends State<Vista0> {
 
                         // MAPA
                         Container(
-                          width: MediaQuery.of(context).size.width / 3,
-                          height: MediaQuery.of(context).size.height / 1.8,
+                          width: MediaQuery.of(context).size.width / 3.3,
+                          height: MediaQuery.of(context).size.height / 3,
                           color: Colors.white,
                           child: FlutterMap(
                             options: const MapOptions(
@@ -1717,72 +2056,8 @@ class _Vista0State extends State<Vista0> {
                         const SizedBox(
                           height: 10,
                         ),
-                        /*Container(
-                          width: MediaQuery.of(context).size.width / 2,
-                          child: ElevatedButton(
-                              onPressed: selectedConductorIds.isNotEmpty
-                                  ? () async {
-                                      showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return AlertDialog(
-                                              title: Text("Crear ruta"),
-                                              actions: [
-                                                TextButton(
-                                                    onPressed: () {
-                                                      Navigator.pop(context);
-                                                    },
-                                                    child: Text("Cancelar")),
-                                                TextButton(
-                                                    onPressed: () async {
-                                                      CircularProgressIndicator(
-                                                        color: Colors.pink,
-                                                      );
-                                                      await crearobtenerYactualizarRuta(
-                                                          selectedConductorIds
-                                                              .first,
-                                                          0,
-                                                          0,
-                                                          'en proceso');
-                                                      setState(() {
-                                                        selected =
-                                                            List<bool>.filled(
-                                                                filteredItems
-                                                                    .length,
-                                                                false);
-                                                        _removeAllMarkersFromMap();
-                                                        idPedidosSeleccionados =
-                                                            [];
-                                                      });
-                                                      /*  print(
-                                                      "---verificar lista de idps");*/
-                                                      // print(idPedidosSeleccionados);
-                                                      fetchPedidos();
-                                                      Navigator.pop(context);
-                                                    },
-                                                    child: Text("Aceptar"))
-                                              ],
-                                            );
-                                          });
-                                    }
-                                  : null,
-                              style: ButtonStyle(
-                                  backgroundColor: WidgetStateProperty.all(
-                                      Color.fromARGB(255, 40, 33, 165))),
-                              child: const Row(
-                                children: [
-                                  Text(
-                                    "Crear ruta",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  Icon(
-                                    Icons.add,
-                                    color: Colors.white,
-                                  )
-                                ],
-                              )),
-                        ),*/
-                        SizedBox(height: 16),
+
+                        const SizedBox(height: 16),
                         Container(
                           width: MediaQuery.of(context).size.width / 3,
                           child: ElevatedButton(
@@ -1792,8 +2067,9 @@ class _Vista0State extends State<Vista0> {
                                       context: context,
                                       builder: (BuildContext context) {
                                         return AlertDialog(
-                                          title: Text("Crear Ruta Pública"),
-                                          content: Text(
+                                          title:
+                                              const Text("Crear Ruta Pública"),
+                                          content: const Text(
                                               "¿Estás seguro de crear una ruta pública?"),
                                           actions: [
                                             TextButton(
@@ -1810,7 +2086,7 @@ class _Vista0State extends State<Vista0> {
                                                   barrierDismissible: false,
                                                   builder:
                                                       (BuildContext context) {
-                                                    return Center(
+                                                    return const Center(
                                                       child:
                                                           CircularProgressIndicator(
                                                         color: Colors.pink,
@@ -1841,7 +2117,7 @@ class _Vista0State extends State<Vista0> {
                                                 Navigator.pop(
                                                     context); // Close the main dialog
                                               },
-                                              child: Text("Aceptar"),
+                                              child: const Text("Aceptar"),
                                             ),
                                           ],
                                         );
